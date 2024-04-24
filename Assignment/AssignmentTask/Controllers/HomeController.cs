@@ -64,25 +64,25 @@ namespace AssignmentTask.Controllers
 
             return RedirectToAction("BookRecords");
         }
-        public IActionResult EditBookDetails(int bookId, /*int borrowerId,*/ string bookName, string author, string borrowerName, DateTime dateOfIssue, int genre, string city)
+        public IActionResult EditBookDetails(int bookId, int borrowerId, string bookName, string author, string borrowerName, DateTime dateOfIssue, int genre, string city)
         {
 
 
-            //Borrower borrower = _context.Borrowers.FirstOrDefault(borrower => borrower.Id == borrowerId);
-            //if (borrower == null)
-            //{
-            //    Borrower newBorrower = new Borrower();
-            //    newBorrower.City = city;
-            //    newBorrower.Name = borrowerName;
-            //    _context.Borrowers.Add(newBorrower);
-            //}
-            //else
-            //{
-            //    borrower.City = city;
-            //    borrower.Name = borrowerName;
-            //    _context.Borrowers.Add(borrower);
-            //}
-            //_context.SaveChanges();
+            Borrower borrower = _context.Borrowers.FirstOrDefault(borrower => borrower.Id == borrowerId);
+            if (borrower == null)
+            {
+                Borrower newBorrower = new Borrower();
+                newBorrower.City = city;
+                newBorrower.Name = borrowerName;
+                _context.Borrowers.Add(newBorrower);
+            }
+            else
+            {
+                borrower.City = city;
+                borrower.Name = borrowerName;
+                _context.Borrowers.Add(borrower);
+            }
+            _context.SaveChanges();
 
             Book books = _context.Books.FirstOrDefault(book => book.Id == bookId);
             if (books != null)
@@ -93,7 +93,7 @@ namespace AssignmentTask.Controllers
                 books.Genre = genre;
                 books.City = city;
                 books.BorrowerName = borrowerName;
-                //books.BorrowerId = borrower.Id;
+                books.BorrowerId = borrower.Id;
             }
 
             _context.Books.Add(books);

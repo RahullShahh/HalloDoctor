@@ -120,23 +120,23 @@
             <div class="modal-body">
                 <form id="addBookDetialsForm">
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="addBookName" placeholder="Book Name">
+                        <input required type="text" class="form-control" id="addBookName" placeholder="Book Name">
                         <label for="addBookName">Book Name</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="addAuthorName" placeholder="Author Name">
+                        <input required type="text" class="form-control" id="addAuthorName" placeholder="Author Name">
                         <label for="addAuthorName">Author Name</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="addBorrowerName" placeholder="Borrower Name">
+                        <input required type="text" class="form-control" id="addBorrowerName" placeholder="Borrower Name">
                         <label for="addBorrowerName">Borrower Name</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="addIssueDate" max="@DateTime.Now.ToString("yyyy-MM-dd")" min="@DateTime.Now.AddYears(-100).ToString()" placeholder="Book Name">
+                        <input required type="date" class="form-control" id="addIssueDate" max="@DateTime.Now.ToString("yyyy-MM-dd")" min="@DateTime.Now.AddYears(-100).ToString()" placeholder="Book Name">
                         <label for="addIssueDate">Date Of Issue</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select class="form-select" id="addGenre" aria-label="Floating label select example">
+                        <select required class="form-select" id="addGenre" aria-label="Floating label select example">
                             <option selected disabled value="0">Select Genre</option>
                             <option value="1">Thriller</option>
                             <option value="2">Romance</option>
@@ -146,11 +146,10 @@
                         <label for="floatingSelect">Genre</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="addCity" placeholder="City">
+                        <input type="text" required class="form-control" id="addCity" placeholder="City">
                         <label for="addCity">City</label>
                     </div>
                     <div class="text-end">
-
                         <button type="reset" class="btn btn-dark text-light" data-dismiss="modal">Close</button>
                         <button type="submit" class="btn blueButtons text-light">Save changes</button>
                     </div>
