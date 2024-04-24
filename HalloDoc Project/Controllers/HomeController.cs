@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using BAL.Interfaces;
+using BAL.Repository;
 namespace HalloDoc_Project.Controllers
 {
     [CustomAuthorize("Patient")]
@@ -147,6 +148,327 @@ namespace HalloDoc_Project.Controllers
                 return BadRequest("Error downloading files");
             }
         }
+
+        public IActionResult CreateNewRequestForMe()
+        {
+            int userId = (int)HttpContext.Session.GetInt32("userId");
+            User user = _context.Users.FirstOrDefault(u => u.Userid == userId);
+            var region = _context.Regions.ToList();
+
+            PatientRequestForMe createRequestForMe = new PatientRequestForMe()
+            {
+                UserName = user.Firstname + " " + user.Lastname,
+                FirstName = user.Firstname,
+                LastName = user.Lastname,
+                //DOB = user
+                PhoneNumber = user.Mobile,
+                Email = user.Email,
+                Street = user.Street,
+                City = user.City,
+                State = user.Regionid,
+                Zipcode = user.Zipcode,
+                regions = region,
+            };
+            return View(createRequestForMe);
+        }
+
+        [HttpPost]
+        public IActionResult CreateNewRequestForMe(PatientRequestForMe pi)
+        {
+            var region = _context.Regions.FirstOrDefault(x => x.Regionid == pi.State);
+            string phone = "+" + pi.code + "-" + pi.PhoneNumber;
+
+            var UserEmail=HttpContext.Session.GetString("Email");
+            User user = _context.Users.FirstOrDefault(u => u.Email == UserEmail);
+
+            var request = new Request
+            {
+                Requesttypeid = 2,
+                Userid = user.Userid,
+                Firstname = pi.FirstName,
+                Lastname = pi.LastName,
+                Phonenumber = phone,
+                Email = pi.Email,
+                Status = 1,
+                Createddate = DateTime.Now,
+                Isdeleted = false,
+                Confirmationnumber = _passwordHasher.GenerateConfirmationNumber(user)
+            };
+            _context.Requests.Add(request);
+            _context.SaveChanges();
+
+
+            var requestClient = new Requestclient
+            {
+                Requestid = request.Requestid,
+                Firstname = pi.FirstName,
+                Lastname = pi.LastName,
+                Phonenumber = phone,
+                Street = pi.Street,
+                City = pi.City,
+                Regionid = pi.State,
+                State = region.Name,
+                Zipcode = pi.Zipcode,
+                Email = pi.Email,
+                Location = pi.City + " " + pi.State,
+                Address = pi.Street + ", " + pi.City + ", " + pi.State + " - " + pi.Zipcode,
+                Strmonth = pi.DOB.Value.Month.ToString(),
+                Intdate = pi.DOB.Value.Day,
+                Intyear = pi.DOB.Value.Year,
+                Notes = pi.symptoms
+            };
+            _context.Requestclients.Add(requestClient);
+            _context.SaveChanges();
+
+
+            if (pi.File != null)
+            {
+                Guid myuuid = Guid.NewGuid();
+                var filename = Path.GetFileName(pi.File.FileName);
+                //var FinalFileName = myuuid.ToString() + filename;
+                var FinalFileName = $"{myuuid.ToString()}${filename}";
+
+                //path
+
+                var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "uploads", FinalFileName);
+
+                //copy in stream
+
+                using (var str = new FileStream(filepath, FileMode.Create))
+                {
+                    //copy file
+                    pi.File.CopyTo(str);
+                }
+
+                //STORE DATA IN TABLE
+                var fileupload = new Requestwisefile()
+                {
+
+                    Requestid = request.Requestid,
+                    Filename = FinalFileName,
+                    Createddate = DateTime.Now,
+                };
+
+                _context.Requestwisefiles.Add(fileupload);
+                _context.SaveChanges();
+            }
+
+
+            return RedirectToAction("patientDashboard");
+        }
+
+        public IActionResult CreateNewRequestForSomeone()
+        {
+            int? userId = (int)HttpContext.Session.GetInt32("userId");
+            //User user = _context.Users.FirstOrDefault(u => u.Userid == userId);
+            var regions = _context.Regions.ToList();
+
+            PatientRequestForSomeone patientRequestSomeoneModel = new PatientRequestForSomeone()
+            {
+                //UserName = user.Firstname + " " + user.Lastname,
+                regions = regions
+            };
+            return View(patientRequestSomeoneModel);
+        }
+
+        [HttpPost]
+        public IActionResult CreateNewRequestForSomeone(PatientRequestForSomeone patientInfoBySome)
+        {
+            var region = _context.Regions.FirstOrDefault(x => x.Regionid == patientInfoBySome.State);
+
+            string phone = "+" + patientInfoBySome.code + "-" + patientInfoBySome.PhoneNumber;
+
+            //int? userId = (int)HttpContext.Session.GetInt32("userId");
+
+            bool isUserExists = _context.Users.Any(u => u.Email == patientInfoBySome.Email);
+
+            if (isUserExists)
+            {
+                User user = _context.Users.FirstOrDefault(u => u.Email == patientInfoBySome.Email);
+                var request = new Request
+                {
+                    Requesttypeid = 3,
+                    Userid = user.Userid,
+                    Firstname = patientInfoBySome.FirstName,
+                    Lastname = patientInfoBySome.LastName,
+                    Phonenumber = phone,
+                    Email = patientInfoBySome.Email,
+                    Relationname = patientInfoBySome.Relation,
+                    Status = 1,
+                    Createddate = DateTime.Now,
+                    Isdeleted = false,
+                    Confirmationnumber = _passwordHasher.GenerateConfirmationNumber(user),
+                };
+                _context.Requests.Add(request);
+                _context.SaveChanges();
+
+
+                var requestClient = new Requestclient
+                {
+                    Requestid = request.Requestid,
+                    Firstname = patientInfoBySome.FirstName,
+                    Lastname = patientInfoBySome.LastName,
+                    Phonenumber = phone,
+                    Email = patientInfoBySome.Email,
+                    Street = patientInfoBySome.Street,
+                    City = patientInfoBySome.City,
+                    Regionid = patientInfoBySome.State,
+                    State = region.Name,
+                    Zipcode = patientInfoBySome.Zipcode,
+                    Intdate = patientInfoBySome.DOB.Value.Day,
+                    Strmonth = patientInfoBySome.DOB.Value.Month.ToString(),
+                    Intyear = patientInfoBySome.DOB.Value.Year,
+                    Notes = patientInfoBySome.symptoms,
+                    Address = patientInfoBySome.Street + ", " + patientInfoBySome.City + ", " + patientInfoBySome.State + " - " + patientInfoBySome.Zipcode,
+                };
+                _context.Requestclients.Add(requestClient);
+                _context.SaveChanges();
+
+
+
+                if (patientInfoBySome.File != null)
+                {
+                    Guid myuuid = Guid.NewGuid();
+                    var filename = Path.GetFileName(patientInfoBySome.File.FileName);
+                    //var FinalFileName = myuuid.ToString() + filename;
+                    var FinalFileName = $"{myuuid.ToString()}${filename}";
+
+                    //path
+
+                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "uploads", FinalFileName);
+
+                    //copy in stream
+
+                    using (var str = new FileStream(filepath, FileMode.Create))
+                    {
+                        //copy file
+                        patientInfoBySome.File.CopyTo(str);
+                    }
+
+                    //STORE DATA IN TABLE
+                    var fileupload = new Requestwisefile()
+                    {
+
+                        Requestid = request.Requestid,
+                        Filename = FinalFileName,
+                        Createddate = DateTime.Now,
+                    };
+
+                    _context.Requestwisefiles.Add(fileupload);
+                    _context.SaveChanges();
+                }
+
+
+            }
+            else
+            {
+                var newaspNetUser = new Aspnetuser()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Username = patientInfoBySome.Email,
+                    Email = patientInfoBySome.Email,
+                    Createddate = DateTime.Now,
+                    Phonenumber = phone,
+                };
+                _context.Aspnetusers.Add(newaspNetUser);
+                _context.SaveChanges();
+
+                var user = new User()
+                {
+                    Aspnetuserid = newaspNetUser.Id,
+                    Firstname = patientInfoBySome.FirstName,
+                    Lastname = patientInfoBySome.LastName,
+                    Email = patientInfoBySome.Email,
+                    Mobile = phone,
+                    Createdby = newaspNetUser.Id,
+                    Createddate = DateTime.Now,
+                    Strmonth = patientInfoBySome.DOB.Value.Month.ToString(),
+                    Intdate = patientInfoBySome.DOB.Value.Day,
+                    Intyear = patientInfoBySome.DOB.Value.Year,
+                    Street = patientInfoBySome.Street,
+                    City = patientInfoBySome.City,
+                    Regionid = patientInfoBySome.State,
+                    State = region.Name,
+                    Zipcode = patientInfoBySome.Zipcode,
+                };
+                _context.Users.Add(user);
+                _context.SaveChanges();
+
+                var request = new Request
+                {
+                    Requesttypeid = 3,
+                    Userid = user.Userid,
+                    Firstname = patientInfoBySome.FirstName,
+                    Lastname = patientInfoBySome.LastName,
+                    Phonenumber = phone,
+                    Email = patientInfoBySome.Email,
+                    Relationname = patientInfoBySome.Relation,
+                    Status = 1,
+                    Createddate = DateTime.Now,
+                    Isdeleted = false,
+                    Confirmationnumber = _passwordHasher.GenerateConfirmationNumber(user),
+                };
+                _context.Requests.Add(request);
+                _context.SaveChanges();
+
+
+                var requestClient = new Requestclient
+                {
+                    Requestid = request.Requestid,
+                    Firstname = patientInfoBySome.FirstName,
+                    Lastname = patientInfoBySome.LastName,
+                    Phonenumber = phone,
+                    Email = patientInfoBySome.Email,
+                    Street = patientInfoBySome.Street,
+                    City = patientInfoBySome.City,
+                    Regionid = patientInfoBySome.State,
+                    State = region.Name,
+                    Zipcode = patientInfoBySome.Zipcode,
+                    Intdate = patientInfoBySome.DOB.Value.Day,
+                    Strmonth = patientInfoBySome.DOB.Value.Month.ToString(),
+                    Intyear = patientInfoBySome.DOB.Value.Year,
+                    Notes = patientInfoBySome.symptoms,
+                    Address = patientInfoBySome.Street + ", " + patientInfoBySome.City + ", " + patientInfoBySome.State + " - " + patientInfoBySome.Zipcode,
+                };
+                _context.Requestclients.Add(requestClient);
+                _context.SaveChanges();
+
+
+
+                if (patientInfoBySome.File != null)
+                {
+                    Guid myuuid = Guid.NewGuid();
+                    var filename = Path.GetFileName(patientInfoBySome.File.FileName);
+                    //var FinalFileName = myuuid.ToString() + filename;
+                    var FinalFileName = $"{myuuid.ToString()}${filename}";
+
+                    //path
+
+                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "uploads", FinalFileName);
+
+                    //copy in stream
+
+                    using (var str = new FileStream(filepath, FileMode.Create))
+                    {
+                        //copy file
+                        patientInfoBySome.File.CopyTo(str);
+                    }
+
+                    //STORE DATA IN TABLE
+                    var fileupload = new Requestwisefile()
+                    {
+                        Requestid = request.Requestid,
+                        Filename = FinalFileName,
+                        Createddate = DateTime.Now,
+                    };
+
+                    _context.Requestwisefiles.Add(fileupload);
+                    _context.SaveChanges();
+                }
+            }
+            return RedirectToAction("patientDashboard");
+        }
+
         public IActionResult logout()
         {
             HttpContext.Session.Clear();

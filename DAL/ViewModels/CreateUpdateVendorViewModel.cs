@@ -25,7 +25,6 @@ namespace DAL.ViewModels
         public string? Email { get; set; }
         public string? Code1 { get; set; }
         [Required(ErrorMessage = "Enter your alternate phone number.")]
-
         public string? Phone1 { get; set; }
         public string? Street { get; set; }
         public string? City { get; set; }

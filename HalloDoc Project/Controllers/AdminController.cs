@@ -1627,8 +1627,6 @@ namespace HalloDoc_Project.Controllers
         #region PatientHistory and PatientRecords
         public IActionResult PatientHistoryPartialTable(string FirstName, string LastName, string Email, string PhoneNo)
         {
-
-
             List<PatientHistoryTableViewModel> PatientHistoryList = _patientHistoryPatientRecords.GetPatientHistoryData(FirstName, LastName, Email, PhoneNo);
             return PartialView("Records/PatienthistoryPartialTable", PatientHistoryList);
         }
