@@ -108,7 +108,7 @@
                         }
                     </td>
                     <td>@Model.adminRequests[i].Address</td>
-                    <td>-</td>
+                    <td>@Model.adminRequests[i].Notes</td>
                     <td>
                         <div>
                             <div class="dropdown">
@@ -171,24 +171,7 @@
             }
         </tbody>
     </table>
-    <nav aria-label="Page navigation example">
-        <ul class="pagination">
-            @if (Model.currentPage == 1)
-            {
-                <li class="page-item"><button type="button" disabled onclick="loadPreviousPage(@Model.currentPage)" class="text-muted page-link" href="#">Previous</button></li>
-            }
-            @if (Model.currentPage > 1)
-            {
-                <li class="page-item"><button type="button" onclick="loadPreviousPage(@Model.currentPage)" class="page-link" href="#">Previous</button></li>
-
-            }
-            <li class="page-item"><span class="page-link" href="#">@Model.currentPage</span></li>
-
-            <li class="page-item"><button type="button" onclick="loadNextPage(@Model.currentPage)" class="page-link" id="">Next</button></li>
-
-
-        </ul>
-    </nav>
+   
     @* ---------------------------------------------------------------------------- *@
     @* accordion *@
     <div class="shadow-lg  d-md-none d-block">
@@ -342,3 +325,21 @@
         }
     </div>
 </div>
+<nav aria-label="Page navigation example" >
+    <ul class="pagination">
+        @if (Model.currentPage == 1)
+        {
+            <li class="page-item"><button type="button" disabled onclick="loadPreviousPage(@Model.currentPage)" class="text-muted page-link" href="#">Previous</button></li>
+        }
+        @if (Model.currentPage > 1)
+        {
+            <li class="page-item"><button type="button" onclick="loadPreviousPage(@Model.currentPage)" class="page-link" href="#">Previous</button></li>
+
+        }
+        <li class="page-item"><span class="page-link" href="#">@Model.currentPage</span></li>
+
+        <li class="page-item"><button type="button" onclick="loadNextPage(@Model.currentPage)" class="page-link" id="">Next</button></li>
+
+
+    </ul>
+</nav>

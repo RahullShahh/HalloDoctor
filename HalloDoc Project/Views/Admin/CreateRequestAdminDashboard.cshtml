@@ -26,49 +26,53 @@
                     <div class="col-sm-12 col-md-12 col-lg-6  my-3">
                         <div class="form-floating">
                             <input type="text"
-                                   asp-for="firstname"
+                                   asp-for="FirstName"
                                    class="form-control border shadow-none "
                                    id="floatingInput1"
                                    placeholder="First Name" />
                             <label for="floatingInput1" class="ms-2">First Name</label>
                         </div>
-                        <span asp-validation-for="@Model.firstname"></span>
+                        <span asp-validation-for="@Model.FirstName" class="validation"></span>
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6 my-3">
                         <div class="form-floating ">
                             <input type="text"
-                                   asp-for="lastname"
+                                   asp-for="LastName"
                                    class="form-control border shadow-none "
                                    id="floatingInput2"
                                    placeholder="Last Name" />
                             <label for="floatingInput2" class="ms-2">Last Name</label>
                         </div>
-
+                        <span asp-validation-for="LastName" class=" validation"></span>
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6  my-3">
                         <div class="form-floating">
                             <input type="tel"
-                                   asp-for="phoneno"
+                                   asp-for="PhoneNo"
                                    class="form-control border shadow-none "
                                    id="floatingInpu5t"
                                    placeholder="PhoneNumber" />
                             <label for="floatingInput5" class="ms-2">Mobile Number</label>
                         </div>
+                        <span asp-validation-for="PhoneNo" class="validation"></span>
+
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6  my-3">
                         <div class="form-floating">
                             <input type="text"
-                                   asp-for="email"
+                                   asp-for="Email"
                                    class="form-control border shadow-none"
                                    id="email1"
                                    placeholder="name@inputtype.com" />
                             <label for="floatingInput4" class="ms-2">Email</label>
                         </div>
+                        <span asp-validation-for="Email" class="validation"></span>
+
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6  my-3">
                         <div class="form-floating">
                             <input type="date"
-                                   asp-for="birthDate"
+                                   asp-for="BirthDate"
                                    max="@DateTime.Now.ToString("yyyy-MM-dd")"
                                    min="@DateTime.Now.AddYears(-80).ToString("yyyy-MM-dd")"
                                    class="form-control border shadow-none"
@@ -76,6 +80,8 @@
                                    placeholder="Date Of Birth" />
                             <label for="floatingInput3" class="ms-2">Date Of Birth</label>
                         </div>
+                        <span asp-validation-for="BirthDate" class="validation"></span>
+
                     </div>
 
                     <h4 class="fw-semibold text-body mt-3">
@@ -87,51 +93,60 @@
                                    asp-for="street"
                                    class="form-control border shadow-none"
                                    id="floatingInput6"
-                                   placeholder="First Name" />
+                                   placeholder="Street" />
                             <label for="floatingInput6" class="ms-2">Street</label>
                         </div>
+                        <span asp-validation-for="street" class="validation"></span>
+
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6 my-3">
                         <div class="form-floating">
                             <input type="text"
-                                   asp-for="city"
+                                   asp-for="City"
                                    class="form-control border shadow-none"
                                    id="floatingInput7"
-                                   placeholder="Last Name" />
+                                   placeholder="City" />
                             <label for="floatingInput7" class="ms-2">City</label>
                         </div>
+                        <span asp-validation-for="City" class="validation"></span>
+
                     </div>
 
                     <div class="col-sm-12 col-md-12 col-lg-6  my-3">
                         <div>
-                            <select class="form-control border d-flex align-items-center py-2" asp-for="state" name="SelectedStateId">
+                            <select class="form-control border d-flex align-items-center py-2" asp-for="State" name="SelectedStateId">
                                 <option>Select State</option>
-                                @for (int i = 0; i < Model.regions.Count; i++)
+                                @for (int i = 0; i < Model.Regions.Count; i++)
                                 {
-                                    <option value="@Model.regions[i].Regionid">@Model.regions[i].Name</option>
+                                    <option value="@Model.Regions[i].Regionid">@Model.Regions[i].Name</option>
                                 }
                             </select>
                         </div>
+                        <span asp-validation-for="State" class="validation"></span>
+
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6 my-3">
                         <div class="form-floating">
                             <input type="text"
-                                   asp-for="zipcode"
+                                   asp-for="Zipcode"
                                    class="form-control border shadow-none"
                                    id="floatingInput8"
                                    placeholder="Last Name" />
                             <label for="floatingInput" class="ms-2">Zip Code</label>
                         </div>
+                        <span asp-validation-for="Zipcode" class="validation"></span>
+
                     </div>
                     <div class="col-sm-12 col-md-12 col-lg-6 form-floating my-3">
                         <div class="form-floating">
                             <input type="text"
-                                   asp-for="lastname"
+                                   asp-for="Room"
                                    class="form-control border shadow-none"
                                    id="floatingInput9"
-                                   placeholder="Last Name" />
+                                   placeholder="Room" />
                             <label for="floatingInput9" class="ms-2">Room # / Suite (Optional)</label>
                         </div>
+                        <span asp-validation-for="Room" class="validation"></span>
 
                     </div>
                     <h4 class="fw-semibold text-body mt-3">
@@ -141,11 +156,13 @@
                         <div class="form-floating">
                             <textarea class="form-control shadow-none"
                                       placeholder="Leave a comment here"
-                                      asp-for="adminNotes"
+                                      asp-for="AdminNotes"
                                       id="floatingTextarea2"
                                       style="height: 120px"></textarea>
                             <label for="floatingTextarea2 control-label" class="ms-2 floating-label">Admin Notes (Optional)</label>
                         </div>
+                        <span class="validation"></span>
+
                     </div>
                     <div class="d-flex justify-content-end my-3">
                         <button onclick="return validateInput()" type="submit" class="btn border-none bg-info p-3 text-light fw-semibold me-4" id="submitBtn">

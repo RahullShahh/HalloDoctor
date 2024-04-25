@@ -7,6 +7,7 @@ using BAL.Repository;
 using AspNetCoreHero.ToastNotification.Abstractions;
 using System.Web.Optimization;
 using Microsoft.Extensions.FileProviders.Physical;
+using System.ComponentModel;
 
 namespace HalloDoc_Project.Controllers
 {
@@ -39,27 +40,51 @@ namespace HalloDoc_Project.Controllers
         //Only ResetPassword is not taken into the three tier architecture otherwise everything from GuestController is in three tier architecture.
         public IActionResult Agree(int Requestid)
         {
-            _agreement.AgreementAccepted(Requestid);
-            return RedirectToAction("login_page", "Guest");
+            try
+            {
+                _agreement.AgreementAccepted(Requestid);
+                return RedirectToAction("login_page", "Guest");
+            }
+            catch 
+            {
+                _notyf.Error("Exception in accepting Agreement.");
+                return RedirectToAction("submit_request_page");
+            }
         }
         public IActionResult CancelAgreement(int Requestid, string Notes)
         {
-            _agreement.AgreementRejected(Requestid, Notes);
-            return RedirectToAction("login_page", "Guest");
+            try
+            {
+                _agreement.AgreementRejected(Requestid, Notes);
+                return RedirectToAction("login_page", "Guest");
+            }
+            catch 
+            {
+                _notyf.Error("Exception in rejecting Agreement.");
+                return RedirectToAction("submit_request_page");
+            }
         }
         public IActionResult ReviewAgreement(int ReqId)
         {
-            var user = _context.Requestclients.FirstOrDefault(x => x.Requestid == ReqId);
-            if (user != null)
+            try
             {
-                ReviewAgreementViewModel reviewmodel = new()
+                var user = _context.Requestclients.FirstOrDefault(x => x.Requestid == ReqId);
+                if (user != null)
                 {
-                    reqID = ReqId,
-                    PatientName = user.Firstname + " " + user.Lastname
-                };
-                return View(reviewmodel);
+                    ReviewAgreementViewModel reviewmodel = new()
+                    {
+                        reqID = ReqId,
+                        PatientName = user.Firstname + " " + user.Lastname
+                    };
+                    return View(reviewmodel);
+                }
+                return RedirectToAction("submit_request_page");
             }
-            return RedirectToAction("submit_request_page");
+            catch 
+            {
+                _notyf.Error("Exception in Review Agreement");
+                return RedirectToAction("submit_request_page");
+            }
         }
         [HttpPost]
         public JsonResult CheckEmail(string email)
@@ -88,9 +113,10 @@ namespace HalloDoc_Project.Controllers
                     return RedirectToAction("submit_request_page", "Guest");
                 }
             }
-            catch (Exception ex)
+            catch 
             {
-                return Content("Exception :- " + ex);
+                _notyf.Error("Exception in Account Setup.");
+                return RedirectToAction("submit_request_page");
             }
         }
         [HttpPost]
@@ -109,9 +135,9 @@ namespace HalloDoc_Project.Controllers
                     _context.SaveChanges();
                 }
             }
-            catch (Exception ex)
+            catch 
             {
-                _notyf.Error(ex.Message);
+                _notyf.Error("Exception in Account Setup.");
             }
             return RedirectToAction("login_page", "Guest");
         }
@@ -164,17 +190,18 @@ namespace HalloDoc_Project.Controllers
             {
                 if (ModelState.IsValid)
                 {
-
                     var jwtToken = _resetPasswordService.GenerateJWTTokenForPassword(bm.PatientEmail);
                     var SetupLink = Url.Action("PatientAccountSetupPage", "Guest", new { token = jwtToken }, Request.Scheme);
                     _patient_Request.BRequest(bm, SetupLink ?? " ");
                     return RedirectToAction("Business_Info", "Guest");
                 }
                 bm.Regions = _context.Regions.ToList();
+                _notyf.Success("Request Created Successfully");
+                _notyf.Custom("Account Set-up details have been sent to the user email");
             }
-            catch (Exception ex)
+            catch 
             {
-                _notyf.Error(ex.Message);
+                _notyf.Error("Exception in creating request for Business");
             }
             return View(bm);
         }
@@ -202,10 +229,12 @@ namespace HalloDoc_Project.Controllers
                     return RedirectToAction("Concierge_info", "Guest");
                 }
                 cm.Regions = _context.Regions.ToList();
+                _notyf.Success("Request Created Successfully");
+                _notyf.Custom("Account Set-up details have been sent to the user email");
             }
-            catch (Exception ex)
+            catch 
             {
-                _notyf.Error(ex.Message);
+                _notyf.Error("Exception in creating request for Concierge");
             }
 
             return View(cm);
@@ -215,6 +244,7 @@ namespace HalloDoc_Project.Controllers
         #region FAMILY FRIEND REQUEST
         public IActionResult Friend_family()
         {
+
             FamilyFriendModel familyFriendModel = new FamilyFriendModel();
             familyFriendModel.PatientRegions = _context.Regions.ToList();
             return View(familyFriendModel);
@@ -240,9 +270,9 @@ namespace HalloDoc_Project.Controllers
                 _notyf.Custom("Account Set-up details have been sent to the user email");
 
             }
-            catch (Exception ex)
+            catch 
             {
-                _notyf.Error(ex.Message);
+                _notyf.Error("Exception in creating request for Family/Friend");
             }
             return View(fmfr);
         }
@@ -260,19 +290,27 @@ namespace HalloDoc_Project.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public IActionResult create_patient_request(PatientModel pm)
         {
-            string path = _environment.WebRootPath;
-            if (ModelState.IsValid)
+            try
             {
-                var uniqueid = Guid.NewGuid().ToString();
-                _patient_Request.PRequest(pm, uniqueid, path);
-                return RedirectToAction("create_patient_request", "Guest");
-            }
+                string path = _environment.WebRootPath;
+                if (ModelState.IsValid)
+                {
+                    var uniqueid = Guid.NewGuid().ToString();
+                    _patient_Request.PRequest(pm, uniqueid, path);
+                    return RedirectToAction("create_patient_request", "Guest");
+                }
+                _notyf.Success("Request Created Successfully");
 
-            pm.Regions = _context.Regions.ToList();
-            return View(pm);
+                pm.Regions = _context.Regions.ToList();
+                return View(pm);
+            }
+            catch 
+            {
+                _notyf.Error("Exception in Creating Patient Request");
+                return RedirectToAction("submit_request_page");
+            }
         }
         #endregion
 
@@ -288,54 +326,62 @@ namespace HalloDoc_Project.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult login_page(LoginViewModel demouser)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var password = _passwordHasher.GenerateSHA256(demouser.Password);
-                Aspnetuser v = _context.Aspnetusers.FirstOrDefault(dt => dt.Username == demouser.Username && dt.Passwordhash == password);
-                if (v != null)
+                if (ModelState.IsValid)
                 {
-                    if (v.Role == "Patient")
+                    var password = _passwordHasher.GenerateSHA256(demouser.Password);
+                    Aspnetuser v = _context.Aspnetusers.FirstOrDefault(dt => dt.Username == demouser.Username && dt.Passwordhash == password);
+                    if (v != null)
                     {
-                        HttpContext.Session.SetString("Email", v.Email);
-                        var token = _jwtToken.generateJwtToken(v.Email, "Patient");
-                        Response.Cookies.Append("jwt", token);
-
-                        _notyf.Success("Logged In Successfully");
-                        return RedirectToAction("PatientDashboard", "Home");
-                    }
-                    else if (v.Role == "Admin")
-                    {
-                        Admin admin = _context.Admins.FirstOrDefault(u => u.Email == v.Email);
-
-                        HttpContext.Session.SetString("Email", v.Email);
-                        var token = _jwtToken.generateJwtToken(v.Email, "Admin");
-                        Response.Cookies.Append("jwt", token);
-
-                        TempData["UserName"] = string.Concat(admin.Firstname, " ", admin.Lastname ?? " ");
-                        _notyf.Success("Logged In Successfully");
-                        return RedirectToAction("AdminDashboard", "Admin");
-                    }
-                    else if (v.Role == "Physician")
-                    {
-                        Physician physician = _context.Physicians.FirstOrDefault(phy => phy.Aspnetuserid == v.Id);
-                        if (physician != null)
+                        if (v.Role == "Patient")
                         {
-                            HttpContext.Session.SetString("AspnetuserId", physician.Aspnetuserid);
-                            var token = _jwtToken.generateJwtToken(physician.Aspnetuserid, "Physician");
+                            HttpContext.Session.SetString("Email", v.Email);
+                            var token = _jwtToken.generateJwtToken(v.Email, "Patient");
                             Response.Cookies.Append("jwt", token);
 
-                            TempData["UserName"] = physician.Firstname + " " + physician.Lastname ?? " ";
+                            _notyf.Success("Logged 'In' Successfully");
+                            return RedirectToAction("PatientDashboard", "Home");
+                        }
+                        else if (v.Role == "Admin")
+                        {
+                            Admin admin = _context.Admins.FirstOrDefault(u => u.Email == v.Email);
+
+                            HttpContext.Session.SetString("Email", v.Email);
+                            var token = _jwtToken.generateJwtToken(v.Email, "Admin");
+                            Response.Cookies.Append("jwt", token);
+
+                            TempData["UserName"] = string.Concat(admin.Firstname, " ", admin.Lastname ?? " ");
                             _notyf.Success("Logged In Successfully");
-                            return RedirectToAction("ProviderDashboard", "Provider");
+                            return RedirectToAction("AdminDashboard", "Admin");
+                        }
+                        else if (v.Role == "Physician")
+                        {
+                            Physician physician = _context.Physicians.FirstOrDefault(phy => phy.Aspnetuserid == v.Id);
+                            if (physician != null)
+                            {
+                                HttpContext.Session.SetString("AspnetuserId", physician.Aspnetuserid);
+                                var token = _jwtToken.generateJwtToken(physician.Aspnetuserid, "Physician");
+                                Response.Cookies.Append("jwt", token);
+
+                                TempData["UserName"] = physician.Firstname + " " + physician.Lastname ?? " ";
+                                _notyf.Success("Logged In Successfully");
+                                return RedirectToAction("ProviderDashboard", "Provider");
+                            }
                         }
                     }
+                    else
+                    {
+                        _notyf.Error("Invalid Credentials");
+                    }
                 }
-                else
-                {
-                    _notyf.Error("Invalid Credentials");
-                }
+                return View();
             }
-            return View();
+            catch (Exception ex)
+            {
+                _notyf.Error("Exception in Login Post");
+                return RedirectToAction("submit_request_page");
+            }
         }
         #endregion
 
@@ -348,6 +394,9 @@ namespace HalloDoc_Project.Controllers
         [AutoValidateAntiforgeryToken]
         public IActionResult forgot_password_page(ForgotPasswordViewModel fvm)
         {
+            try
+            {
+
             if (ModelState.IsValid)
             {
                 var jwtToken = _resetPasswordService.GenerateJWTTokenForPassword(fvm.Email);
@@ -358,6 +407,12 @@ namespace HalloDoc_Project.Controllers
                 return RedirectToAction("login_page", "Guest");
             }
             return View();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Forgot Password Post");
+                return RedirectToAction("submit_request_page");
+            }
         }
         #endregion
 
@@ -377,12 +432,16 @@ namespace HalloDoc_Project.Controllers
             }
             catch (Exception ex)
             {
+                _notyf.Error("Exception in Reset Password");
                 return Content("Invalid token");
             }
         }
         [HttpPost]
         public IActionResult ResetPassword(ResetPasswordViewModel rpvm)
         {
+            try
+            {
+
             if (ModelState.IsValid)
             {
                 Aspnetuser aspnetuser = _context.Aspnetusers.FirstOrDefault(u => u.Email == rpvm.email);
@@ -396,9 +455,13 @@ namespace HalloDoc_Project.Controllers
                 }
 
             }
-
             return View(rpvm);
-
+            }
+            catch 
+            {
+                _notyf.Error("Exception in Reset Password Post");
+                return Content("Invalid token");
+            }
         }
         #endregion
 

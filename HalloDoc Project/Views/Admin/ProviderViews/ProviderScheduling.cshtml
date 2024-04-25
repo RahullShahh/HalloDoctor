@@ -147,6 +147,8 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.11/index.global.min.js"></script>
 
 <script>
+
+    //populates region dropdown for filter of the physicians by location except in month view
     function populateRegionDropdown() {
         $.ajax({
             url: '/Admin/RegionResults',
@@ -198,11 +200,7 @@
         var selectedRegion = $('#regionselect').val();
         console.log(selectedRegion)
         getPhysicianShift(selectedRegion);
-        // $('#regionselect').on('change', function () {
-        //     var selectedRegion = $('#regionselect').val();
-        //     console.log(selectedRegion)
-        //     getPhysicianShift(selectedRegion);
-        // });
+        //this function is responsible to find all the physicians and map them to their respective shift
         function getPhysicianShift(region) {
             fetch('/Admin/GetPhysicianShift?region=' + region)
                 .then(response => response.json())
@@ -213,7 +211,7 @@
                         //avatar: `<img src="${physician.photo}" class="avatar" />`
                     }));
                     console.log(resources);
-                    // Fetch events from the server
+                    // Fetch events from the database
                     fetch('/Admin/GetEvents')
                         .then(response => response.json())
                         .then(data => {

@@ -25,7 +25,7 @@ namespace DAL.ViewModels
         public string city {  get; set; }
         public int regionId{  get; set; }
         public string zipcode { get; set; }
-        public string billingPhone {  get; set; }
+        public string? billingPhone {  get; set; }
         public int adminId {  get; set; }
         public  List<Region> region { get; set; }
         public List<Status> statuses { get; set; }

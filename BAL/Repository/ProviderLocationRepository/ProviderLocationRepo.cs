@@ -21,7 +21,7 @@ namespace BAL.Repository.ProviderLocationRepository
             IEnumerable<PhyLocationRow> list = (from pl in _context.Physicianlocations
                                                 select new PhyLocationRow
                                                 {
-                                                    PhysicianName = pl.Physicianname,
+                                                    PhysicianName = pl.Physicianname??"name_not_found",
                                                     Latitude = pl.Latitude ?? 0,
                                                     Longitude = pl.Longtitude ?? 0,
                                                 });

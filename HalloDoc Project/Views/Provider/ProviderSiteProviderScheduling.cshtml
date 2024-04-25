@@ -11,7 +11,7 @@
     }
 
     .fc-event-end .fc-event-time {
-        display: none; 
+        display: none;
     }
 
     .fc-header-toolbar.fc-header-resources-only {
@@ -136,29 +136,29 @@
 <script>
     var calendar;
     function ProviderShiftModal() {
-    const myModal = document.getElementById("createProviderShiftModal");
-    var bsModal = new bootstrap.Modal(myModal);
-    bsModal.show();
-    console.log("shown modal");
-    $.ajax({
-        url: '/Provider/PhysicianRegionResults',
-        type: 'GET',
-        success: function (data) {
-            console.log(data);
-            var dropdownData = data;
-            console.log(dropdownData);
-            var dropdown = $('#physicianRegions');
-            dropdown.empty();
-            dropdown.append($('<option>').text('Select Region').val(""));
-            dropdownData.forEach(function (item) {
-                dropdown.append($('<option>').text(item.name).val(item.regionid));
-            });
-        },
-        error: function (xhr, status, error) {
-            console.error('Error:', error);
-        }
-    });
-}
+        const myModal = document.getElementById("createProviderShiftModal");
+        var bsModal = new bootstrap.Modal(myModal);
+        bsModal.show();
+        console.log("shown modal");
+        $.ajax({
+            url: '/Provider/PhysicianRegionResults',
+            type: 'GET',
+            success: function (data) {
+                console.log(data);
+                var dropdownData = data;
+                console.log(dropdownData);
+                var dropdown = $('#physicianRegions');
+                dropdown.empty();
+                dropdown.append($('<option>').text('Select Region').val(""));
+                dropdownData.forEach(function (item) {
+                    dropdown.append($('<option>').text(item.name).val(item.regionid));
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    }
 
 
 
@@ -244,34 +244,34 @@
                     var event = info.event;
                     var modalBody = document.querySelector('#eventModal .modal-body');
                     var eventDetails = `
-                                                                                <form id="editShiftForm">
-                                                                                <input class="d-none" id="shiftDetailId" name=shiftDetailId value="${shiftDetailId}">
-                                                                                   <div class="form-floating mb-3 mt-3">
-                                                                            <select class="form-control" aria-label="Default select example" id="selectregion" disabled>
-                                                                                <option value="">${region}</option>
+                                                                                    <form id="editShiftForm">
+                                                                                    <input class="d-none" id="shiftDetailId" name=shiftDetailId value="${shiftDetailId}">
+                                                                                       <div class="form-floating mb-3 mt-3">
+                                                                                <select class="form-control" aria-label="Default select example" id="selectregion" disabled>
+                                                                                    <option value="">${region}</option>
 
-                                                                            </select>
+                                                                                </select>
+                                                                            </div>
+                                                                                    <div class="form-floating mb-3 mt-3">
+                                                                                                    <select class="form-select pt-1 physicianDropdown" id="physicianSelect" aria-label="Default select example" disabled>
+                                                                                                    <option value="" selected disabled>${event.title}</option>
+                                                                                                </select>
+                                                                                            </div>
+                                                                                                    <div class="col-md-12 form-floating mb-3">
+                                                                                    <input id="StartDateView" class="form-control rounded" name="Startdate" type="date" placeholder="Suchtext" autocomplete="off" value="${formatDate(event.start)}" disabled>
+                                                                                <label for="StartDateView">Shifted Date</label>
+                                                                            <div class="d-flex gap-2 mt-3">
+                                                                            <div class="col-md-6 form-floating mb-3">
+                                                                                    <input id="StartTimeView"  disabled class="form-control rounded" name="Starttime" type="time" placeholder="Suchtext" autocomplete="off"  value="${formatTime(event.start)}" >
+                                                                                <label for="StartTimeView">Start</label>
                                                                         </div>
-                                                                                <div class="form-floating mb-3 mt-3">
-                                                                                                <select class="form-select pt-1 physicianDropdown" id="physicianSelect" aria-label="Default select example" disabled>
-                                                                                                <option value="" selected disabled>${event.title}</option>
-                                                                                            </select>
-                                                                                        </div>
-                                                                                                <div class="col-md-12 form-floating mb-3">
-                                                                                <input id="StartDateView" class="form-control rounded" name="Startdate" type="date" placeholder="Suchtext" autocomplete="off" value="${formatDate(event.start)}" disabled>
-                                                                            <label for="StartDateView">Shifted Date</label>
-                                                                        <div class="d-flex gap-2 mt-3">
                                                                         <div class="col-md-6 form-floating mb-3">
-                                                                                <input id="StartTimeView"  disabled class="form-control rounded" name="Starttime" type="time" placeholder="Suchtext" autocomplete="off"  value="${formatTime(event.start)}" >
-                                                                            <label for="StartTimeView">Start</label>
-                                                                    </div>
-                                                                    <div class="col-md-6 form-floating mb-3">
-                                                                                <input id="EndTimeView" asp-for="Endtime" disabled	 class="form-control rounded" name="Endtime" type="time" placeholder="Suchtext" autocomplete="off" value="${formatTime(event.end)}" >
-                                                                            <label for="EndTimeView">End</label>
-                                                                    </div>
-                                                                    </div>
-                                                                    </form>
-                                                                                    `;
+                                                                                    <input id="EndTimeView" asp-for="Endtime" disabled	 class="form-control rounded" name="Endtime" type="time" placeholder="Suchtext" autocomplete="off" value="${formatTime(event.end)}" >
+                                                                                <label for="EndTimeView">End</label>
+                                                                        </div>
+                                                                        </div>
+                                                                        </form>
+                                                                                        `;
                     modalBody.innerHTML = eventDetails;
                 },
                 eventBackgroundColor: function (event) {
@@ -371,7 +371,7 @@
         $('#createProviderShiftForm').submit(function (event) {
             debugger;
             event.preventDefault();
-            
+
             if ($('#Isrepeat').is(":checked") && $('#Refill').val() === "") {
                 $('#refillError').text("Required Field");
                 return;
@@ -653,7 +653,7 @@
 
                     <div class="row">
                         <div class="col-12 d-flex justify-content-end">
-                            <button type="submit" value="Save" class="btn btn-info text-white mx-2" >Save</button>
+                            <button type="submit" value="Save" class="btn btn-info text-white mx-2">Save</button>
                             <button type="button" class="btn btn-outline-info hover_white" id="shiftCancel" data-bs-dismiss="modal">Cancel</button>
                         </div>
                     </div>

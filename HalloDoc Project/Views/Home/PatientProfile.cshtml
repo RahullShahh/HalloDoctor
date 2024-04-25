@@ -1,14 +1,14 @@
 ﻿@model PatientProfileViewModel
 @{
     Layout = "PatientDashboardLayout";
-    ViewData["username"] = Model.FirstName+" "+Model.LastName;
+    ViewData["username"] = Model.FirstName + " " + Model.LastName;
     ViewData["Title"] = "Patient Profile";
 
 }
 
 <!doctype html>
 <html lang="en" style="width:100%;">
-        
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,31 +26,33 @@
 </head>
 <body>
 
-    <div class="d-flex justify-content-between mx-5" style=" ">
+    <div class="d-flex justify-content-between align-items-center mx-2" style=" ">
         <h2 class=" mt-4">Patient Profile</h2>
-        <button class="btn btn-outline-info " onclick="history.back(-1)">
-            <img src="~/SRS Screen Shorts/go-back-2.svg" width="20px" />Back
-        </button>
+        <div>
+            <button class="btn btn-outline-info " onclick="history.back(-1)">
+                <img src="~/SRS Screen Shorts/go-back-2.svg" width="20px" />Back
+            </button>
+        </div>
     </div>
-    <form method="post" asp-action="editprofile" asp-controller="Home" >
-        <div class="shadow-lg  m-5" style="">
+    <form method="post" asp-action="editprofile" asp-controller="Home">
+        <div class="shadow-lg mx-2" style="">
             <h5>
                 General Information
             </h5>
             <div>
                 <div class="row">
-                    <div class="col-11 mt-4 col-md-6 form-floating ">
+                    <div class="col-12 mt-4 col-md-6 form-floating ">
                         <input type="text" asp-for="FirstName" class="t  form-control" id="fname" disabled>
                         <label for="fname" class="ms-2">First Name</label>
                     </div>
-                    <div class="col-11 mt-4 col-md-6 form-floating ">
+                    <div class="col-12 mt-4 col-md-6 form-floating ">
                         <input type="text" asp-for="LastName" class="t  form-control" id="lname" disabled>
                         <label for="lname" class="ms-2">Last Name</label>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-11 mt-4 col-md-6 form-floating ">
-                        <input type="date" class="t  form-control" id="Dates" disabled>
+                    <div class="col-12 mt-4 col-md-6 form-floating ">
+                        <input type="date" asp-for="Date" class="t  form-control" id="Dates" disabled>
                         <label for="Dates" class="ms-2">Date</label>
                     </div>
                 </div>
@@ -59,7 +61,7 @@
                 Contact Information
             </h5>
             <div class="row">
-                <div class="col-11 mt-4 col-md-2 form-floating ">
+                <div class="col-12 mt-4 col-md-2 form-floating ">
                     <div class="form-floating">
                         <select class="form-select" id="floatingSelect" aria-label="Floating label select example" disabled>
                             <option selected>Select</option>
@@ -69,12 +71,12 @@
                         <label for="floatingSelect">Type</label>
                     </div>
                 </div>
-                <div class="col-11 mt-4 col-md-4 form-floating ">
+                <div class="col-12 mt-4 col-md-4 form-floating ">
                     <div class="form-floating ">
                         <input id="patient-phone" asp-for="PhoneNo" class="form-control" type="tel" name="phone1" disabled />
                     </div>
                 </div>
-                <div class="col-11 mt-4 col-md-6 form-floating ">
+                <div class="col-12 mt-4 col-md-6 form-floating ">
                     <input type="email" asp-for="email" class="t  form-control" id="email" disabled>
                     <label for="email" class="ms-2">E-mail</label>
                 </div>
@@ -83,14 +85,14 @@
                 <h5>Patient Location</h5>
             </div>
             <div class="row ">
-                <div class="col-11 col-md-6 mt-4">
+                <div class="col-12 col-md-6 mt-4">
                     <div class="form-floating">
                         <input type="text" asp-for="street" class="t form-control" id="floatingEmail" disabled>
                         <label for="floatingEmail">Street</label>
                     </div>
 
                 </div>
-                <div class="col-11 col-md-6 mt-4">
+                <div class="col-12 col-md-6 mt-4">
                     <div class="form-floating">
                         <input type="text" asp-for="city" class="t  form-control" id="floatingCity" disabled>
                         <label for="floatingCity">City</label>
@@ -99,35 +101,30 @@
             </div>
 
             <div class="row ">
-                <div class="col-11 col-md-6 mt-4">
+                <div class="col-12 col-md-6 mt-4">
                     <div class="form-floating">
                         <input type="text" asp-for="state" class="t  form-control" id="floatingState" disabled>
                         <label for="floatingState">State</label>
                     </div>
                 </div>
-                <div class="col-11 col-md-4 mt-4">
+                <div class="col-12 col-md-6 mt-4">
                     <div class="form-floating">
                         <input type="number" asp-for="zipcode" class="t  form-control" id="floatingZip" disabled>
                         <label for="floatingZip">Zip Code</label>
                     </div>
                 </div>
-                <div class=" mt-4 col-5 col-md-1 ">
-                    <button  type="button" class="btn btn-outline-info h-100 ">
-                        Map
-                    </button>
-                </div>
+                
             </div>
 
             <div class="mt-4 justify-content-end d-flex">
                 <button id="editBtn" type="button" onclick="editDetails()" class="btn btn-info">
-                    <label>Edit</label>
+                    Edit
                 </button>
 
-                <button
-                    id="saveBtn" type="submit" class=" btn btn-info" style="display:none">
-                    <label>Save</label>
+                <button id="saveBtn" type="submit" class=" btn btn-info" style="display:none">
+                    Save
                 </button>
-                
+
             </div>
         </div>
 

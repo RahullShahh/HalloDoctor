@@ -151,7 +151,7 @@ namespace HalloDoc_Project.Controllers
         {
             CreateRequestViewModel model = new CreateRequestViewModel()
             {
-                regions = _context.Regions.ToList(),
+                Regions = _context.Regions.ToList(),
             };
             return View(model);
         }

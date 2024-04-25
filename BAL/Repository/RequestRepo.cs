@@ -45,7 +45,7 @@ namespace BAL.Repository
                 user.Username = fmfr.PatientModel.Email;
                 user.Createddate = DateTime.Now;
                 user.Phonenumber = PatientPhoneNumber;
-
+                user.Role = "Patient";
                 _context.Aspnetusers.Add(user);
                 _context.SaveChanges();
 
@@ -207,6 +207,7 @@ namespace BAL.Repository
                 user.Username = cm.PatientEmail;
                 user.Createddate = DateTime.Now;
                 user.Phonenumber = PatientPhoneNumber;
+                user.Role = "Patient";
                 _context.Aspnetusers.Add(user);
                 _context.SaveChanges();
 
@@ -374,6 +375,7 @@ namespace BAL.Repository
                 user.Username = pm.FirstName;
                 user.Createddate = DateTime.Now;
                 user.Phonenumber = PatientPhone;
+                user.Role = "Patient";
                 _context.Aspnetusers.Add(user);
                 _context.SaveChanges();
 
@@ -521,6 +523,8 @@ namespace BAL.Repository
                 user.Username = bm.PatientEmail;
                 user.Createddate = DateTime.Now;
                 user.Phonenumber = BusinessPhoneNo;
+
+                user.Role = "Patient";
                 _context.Aspnetusers.Add(user);
                 _context.SaveChanges();
 

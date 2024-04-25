@@ -350,7 +350,7 @@ namespace BAL.Repository
         }
         public void CreateRequestFromAdminDashboard(CreateRequestViewModel model)
         {
-            var user = _context.Requests.FirstOrDefault(x => x.Email == model.email);
+            var user = _context.Requests.FirstOrDefault(x => x.Email == model.Email);
             if (user != null)
             {
                 //var newvm=new PatientModel();
@@ -358,23 +358,23 @@ namespace BAL.Repository
 
                 string id = Guid.NewGuid().ToString();
                 newUser.Id = id;
-                newUser.Email = model.email;
-                newUser.Phonenumber = model.phoneno;
-                newUser.Username = model.firstname;
+                newUser.Email = model.Email;
+                newUser.Phonenumber = model.PhoneNo;
+                newUser.Username = model.FirstName;
                 newUser.Createddate = DateTime.Now;
                 _context.Aspnetusers.Add(newUser);
                 _context.SaveChanges();
 
                 User user_obj = new User();
                 user_obj.Aspnetuserid = newUser.Id;
-                user_obj.Firstname = model.firstname;
-                user_obj.Lastname = model.lastname;
-                user_obj.Email = model.email;
-                user_obj.Mobile = model.phoneno;
+                user_obj.Firstname = model.FirstName;
+                user_obj.Lastname = model.LastName;
+                user_obj.Email = model.Email;
+                user_obj.Mobile = model.PhoneNo;
                 user_obj.Street = model.street;
-                user_obj.City = model.city;
-                user_obj.State = model.state;
-                user_obj.Zipcode = model.zipcode;
+                user_obj.City = model.City;
+                user_obj.State = model.State;
+                user_obj.Zipcode = model.Zipcode;
                 user_obj.Createddate = DateTime.Now;
                 user_obj.Createdby = id;
                 _context.Users.Add(user_obj);
@@ -384,10 +384,10 @@ namespace BAL.Repository
                 //change the fname, lname , and contact detials acc to the requestor
                 request.Requesttypeid = 2;
                 request.Userid = user_obj.Userid;
-                request.Firstname = model.firstname;
-                request.Lastname = model.lastname;
-                request.Phonenumber = model.phoneno;
-                request.Email = model.email;
+                request.Firstname = model.FirstName;
+                request.Lastname = model.LastName;
+                request.Phonenumber = model.PhoneNo;
+                request.Email = model.Email;
                 request.Createddate = DateTime.Now;
                 request.Patientaccountid = id;
                 request.Status = 1;
@@ -397,17 +397,17 @@ namespace BAL.Repository
 
                 Requestclient rc = new Requestclient();
                 rc.Requestid = request.Requestid;
-                rc.Firstname = model.firstname;
-                rc.Lastname = model.lastname;
-                rc.Phonenumber = model.phoneno;
-                rc.Location = model.city + model.state;
-                rc.Email = model.email;
-                rc.Address = model.street + " " + model.city + " " + model.state + " " + model.zipcode;
+                rc.Firstname = model.FirstName;
+                rc.Lastname = model.LastName;
+                rc.Phonenumber = model.PhoneNo;
+                rc.Location = model.City + model.State;
+                rc.Email = model.Email;
+                rc.Address = model.street + " " + model.City + " " + model.State + " " + model.Zipcode;
                 rc.Street = model.street;
-                rc.City = model.city;
-                rc.State = model.state;
-                rc.Zipcode = model.zipcode;
-                rc.Notes = model.adminNotes;
+                rc.City = model.City;
+                rc.State = model.State;
+                rc.Zipcode = model.Zipcode;
+                rc.Notes = model.AdminNotes;
 
                 _context.Requestclients.Add(rc);
                 _context.SaveChanges();
@@ -415,14 +415,14 @@ namespace BAL.Repository
             }
             else
             {
-                User user_obj = _context.Users.FirstOrDefault(u => u.Email == model.email);
+                User user_obj = _context.Users.FirstOrDefault(u => u.Email == model.Email);
                 Request request = new Request();
                 //change the fname, lname , and contact detials acc to the requestor
                 request.Requesttypeid = 2;
-                request.Firstname = model.firstname;
-                request.Lastname = model.lastname;
-                request.Phonenumber = model.phoneno;
-                request.Email = model.email;
+                request.Firstname = model.FirstName;
+                request.Lastname = model.LastName;
+                request.Phonenumber = model.PhoneNo;
+                request.Email = model.Email;
                 request.Createddate = DateTime.Now;
                 request.Status = 1;
                 //request.Createduserid = user_obj.Userid;
@@ -431,17 +431,17 @@ namespace BAL.Repository
 
                 Requestclient rc = new Requestclient();
                 rc.Requestid = request.Requestid;
-                rc.Firstname = model.firstname;
-                rc.Lastname = model.lastname;
-                rc.Phonenumber = model.phoneno;
-                rc.Location = model.city + " " + model.state;
-                rc.Email = model.email;
-                rc.Address = model.city + ", " + model.street + ", " + model.state + ", " + model.zipcode;
+                rc.Firstname = model.FirstName;
+                rc.Lastname = model.LastName;
+                rc.Phonenumber = model.PhoneNo;
+                rc.Location = model.City + " " + model.State;
+                rc.Email = model.Email;
+                rc.Address = model.City + ", " + model.street + ", " + model.State + ", " + model.Zipcode;
                 rc.Street = model.street;
-                rc.City = model.city;
-                rc.State = model.state;
-                rc.Zipcode = model.zipcode;
-                rc.Notes = model.adminNotes;
+                rc.City = model.City;
+                rc.State = model.State;
+                rc.Zipcode = model.Zipcode;
+                rc.Notes = model.AdminNotes;
 
                 _context.Requestclients.Add(rc);
                 _context.SaveChanges();

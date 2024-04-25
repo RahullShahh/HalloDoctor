@@ -1,11 +1,5 @@
 ﻿using DAL.DataModels;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DAL.ViewModels
 {
@@ -13,26 +7,26 @@ namespace DAL.ViewModels
     {
         [Required(ErrorMessage = "First name cannot be kept empty")]
         [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "Please enter a valid first name.")]
-        public string firstname {  get; set; }
+        public string FirstName {  get; set; }
         [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "Please enter a valid last name.")]
-        public string lastname { get; set; }
+        public string LastName { get; set; }
         [Required(ErrorMessage = "Phone number cannot be kept empty")]
         [RegularExpression(@"^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$", ErrorMessage = "Entered phone format is not valid.")]
-        public string phoneno { get; set; } = "";
+        public string PhoneNo { get; set; } = "";
         [Required(ErrorMessage = "Email cannot be kept empty")]
         [RegularExpression("^([\\w\\.\\-]+)@([\\w\\-]+)((\\.(\\w){2,3})+)$", ErrorMessage = "Enter Valid Email")]
-        public string email {  get; set; }
+        public string Email {  get; set; }
         [Required(ErrorMessage = "Date of Birth cannot be empty")]
-        public DateOnly birthDate { get; set; }
+        public DateOnly BirthDate { get; set; }
         public string street { get; set; }
-        public string city { get; set; }
+        public string City { get; set; }
         [Required(ErrorMessage = "Kindly select a state")]
-        public string state { get; set; }
+        public string State { get; set; }
         [StringLength(6)]
-        public string zipcode { get; set; }
-        public string room {  get; set; }
+        public string? Zipcode { get; set; }
+        public string? Room {  get; set; }
 
-        public List<Region> regions { get; set; }
-        public string adminNotes {  get; set; }
+        public List<Region> Regions { get; set; }
+        public string? AdminNotes {  get; set; }
     }
 }

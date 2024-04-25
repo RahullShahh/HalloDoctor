@@ -24,9 +24,23 @@ namespace BAL.Repository
             _fileOperations = fileOperations;
         }
 
+        public static string GetDOB(Requestclient reqcli)
+        {
+            string dob = reqcli.Intyear + "-" + reqcli.Strmonth + "-" + reqcli.Intdate;
+            if (reqcli.Intyear == null || reqcli.Strmonth == null || reqcli.Intdate == null)
+            {
+                return " ";
+            }
+
+            string dobdate = DateTime.Parse(dob).ToString("MMM dd, yyyy");
+
+            return dobdate;
+        }
+
         public PatientProfileViewModel PatientProfile(string email)
         {
             User v = _context.Users.FirstOrDefault(dt => dt.Email == email);
+            Requestclient patient=_context.Requestclients.FirstOrDefault(dt => dt.Email == email);
             PatientProfileViewModel ppm = new();
             if (v != null)
             {
@@ -40,6 +54,7 @@ namespace BAL.Repository
                 ppm.state = v.State ?? "";
                 ppm.email = v.Email;
                 ppm.city = v.City ?? "";
+                //ppm.Date = GetDOB(patient);
             }
             return ppm;
         }
