@@ -38,61 +38,8 @@ namespace HalloDoc_Project.Controllers
         }
 
         //Only ResetPassword is not taken into the three tier architecture otherwise everything from GuestController is in three tier architecture.
-        public IActionResult Agree(int Requestid)
-        {
-            try
-            {
-                _agreement.AgreementAccepted(Requestid);
-                return RedirectToAction("login_page", "Guest");
-            }
-            catch 
-            {
-                _notyf.Error("Exception in accepting Agreement.");
-                return RedirectToAction("submit_request_page");
-            }
-        }
-        public IActionResult CancelAgreement(int Requestid, string Notes)
-        {
-            try
-            {
-                _agreement.AgreementRejected(Requestid, Notes);
-                return RedirectToAction("login_page", "Guest");
-            }
-            catch 
-            {
-                _notyf.Error("Exception in rejecting Agreement.");
-                return RedirectToAction("submit_request_page");
-            }
-        }
-        public IActionResult ReviewAgreement(int ReqId)
-        {
-            try
-            {
-                var user = _context.Requestclients.FirstOrDefault(x => x.Requestid == ReqId);
-                if (user != null)
-                {
-                    ReviewAgreementViewModel reviewmodel = new()
-                    {
-                        reqID = ReqId,
-                        PatientName = user.Firstname + " " + user.Lastname
-                    };
-                    return View(reviewmodel);
-                }
-                return RedirectToAction("submit_request_page");
-            }
-            catch 
-            {
-                _notyf.Error("Exception in Review Agreement");
-                return RedirectToAction("submit_request_page");
-            }
-        }
-        [HttpPost]
-        public JsonResult CheckEmail(string email)
-        {
-            bool emailExists = _context.Users.Any(u => u.Email == email);
-            return Json(new { exists = emailExists });
-        }
 
+        #region PATIENT ACCOUNT SETUP PAGE
         public IActionResult PatientAccountSetupPage(string token)
         {
             try
@@ -113,7 +60,7 @@ namespace HalloDoc_Project.Controllers
                     return RedirectToAction("submit_request_page", "Guest");
                 }
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in Account Setup.");
                 return RedirectToAction("submit_request_page");
@@ -135,12 +82,64 @@ namespace HalloDoc_Project.Controllers
                     _context.SaveChanges();
                 }
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in Account Setup.");
             }
             return RedirectToAction("login_page", "Guest");
         }
+        #endregion
+        
+        #region SEND AGREEMENT
+        public IActionResult Agree(int Requestid)
+        {
+            try
+            {
+                _agreement.AgreementAccepted(Requestid);
+                return RedirectToAction("login_page", "Guest");
+            }
+            catch
+            {
+                _notyf.Error("Exception in accepting Agreement.");
+                return RedirectToAction("submit_request_page");
+            }
+        }
+        public IActionResult CancelAgreement(int Requestid, string Notes)
+        {
+            try
+            {
+                _agreement.AgreementRejected(Requestid, Notes);
+                return RedirectToAction("login_page", "Guest");
+            }
+            catch
+            {
+                _notyf.Error("Exception in rejecting Agreement.");
+                return RedirectToAction("submit_request_page");
+            }
+        }
+        public IActionResult ReviewAgreement(int ReqId)
+        {
+            try
+            {
+                var user = _context.Requestclients.FirstOrDefault(x => x.Requestid == ReqId);
+                if (user != null)
+                {
+                    ReviewAgreementViewModel reviewmodel = new()
+                    {
+                        reqID = ReqId,
+                        PatientName = user.Firstname + " " + user.Lastname
+                    };
+                    return View(reviewmodel);
+                }
+                return RedirectToAction("submit_request_page");
+            }
+            catch
+            {
+                _notyf.Error("Exception in Review Agreement");
+                return RedirectToAction("submit_request_page");
+            }
+        }
+        #endregion
 
         #region GUEST VIEWS
         public IActionResult PrivacyPolicy()
@@ -199,7 +198,7 @@ namespace HalloDoc_Project.Controllers
                 _notyf.Success("Request Created Successfully");
                 _notyf.Custom("Account Set-up details have been sent to the user email");
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in creating request for Business");
             }
@@ -232,7 +231,7 @@ namespace HalloDoc_Project.Controllers
                 _notyf.Success("Request Created Successfully");
                 _notyf.Custom("Account Set-up details have been sent to the user email");
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in creating request for Concierge");
             }
@@ -270,7 +269,7 @@ namespace HalloDoc_Project.Controllers
                 _notyf.Custom("Account Set-up details have been sent to the user email");
 
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in creating request for Family/Friend");
             }
@@ -279,6 +278,12 @@ namespace HalloDoc_Project.Controllers
         #endregion
 
         #region PATIENT REQUEST 
+        [HttpPost]
+        public JsonResult CheckEmail(string email)
+        {
+            bool emailExists = _context.Users.Any(u => u.Email == email);
+            return Json(new { exists = emailExists });
+        }
         [HttpGet]
         public IActionResult create_patient_request()
         {
@@ -306,7 +311,7 @@ namespace HalloDoc_Project.Controllers
                 pm.Regions = _context.Regions.ToList();
                 return View(pm);
             }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in Creating Patient Request");
                 return RedirectToAction("submit_request_page");
@@ -397,16 +402,16 @@ namespace HalloDoc_Project.Controllers
             try
             {
 
-            if (ModelState.IsValid)
-            {
-                var jwtToken = _resetPasswordService.GenerateJWTTokenForPassword(fvm.Email);
-                var resetLink = Url.Action("ResetPassword", "Guest", new { token = jwtToken }, Request.Scheme);
-                if (resetLink != null)
-                    _emailService.SendEmailForPasswordReset(fvm, resetLink);
-                _notyf.Success("Link sent in email");
-                return RedirectToAction("login_page", "Guest");
-            }
-            return View();
+                if (ModelState.IsValid)
+                {
+                    var jwtToken = _resetPasswordService.GenerateJWTTokenForPassword(fvm.Email);
+                    var resetLink = Url.Action("ResetPassword", "Guest", new { token = jwtToken }, Request.Scheme);
+                    if (resetLink != null)
+                        _emailService.SendEmailForPasswordReset(fvm, resetLink);
+                    _notyf.Success("Link sent in email");
+                    return RedirectToAction("login_page", "Guest");
+                }
+                return View();
             }
             catch
             {
@@ -442,22 +447,22 @@ namespace HalloDoc_Project.Controllers
             try
             {
 
-            if (ModelState.IsValid)
-            {
-                Aspnetuser aspnetuser = _context.Aspnetusers.FirstOrDefault(u => u.Email == rpvm.email);
-                if (rpvm.password == rpvm.confirmpassword)
+                if (ModelState.IsValid)
                 {
-                    aspnetuser.Passwordhash = _passwordHasher.GenerateSHA256(rpvm.password);
-                    aspnetuser.Modifieddate = DateTime.Now;
-                    _context.Aspnetusers.Update(aspnetuser);
-                    _context.SaveChanges();
-                    return View("login_page");
-                }
+                    Aspnetuser aspnetuser = _context.Aspnetusers.FirstOrDefault(u => u.Email == rpvm.email);
+                    if (rpvm.password == rpvm.confirmpassword)
+                    {
+                        aspnetuser.Passwordhash = _passwordHasher.GenerateSHA256(rpvm.password);
+                        aspnetuser.Modifieddate = DateTime.Now;
+                        _context.Aspnetusers.Update(aspnetuser);
+                        _context.SaveChanges();
+                        return View("login_page");
+                    }
 
+                }
+                return View(rpvm);
             }
-            return View(rpvm);
-            }
-            catch 
+            catch
             {
                 _notyf.Error("Exception in Reset Password Post");
                 return Content("Invalid token");

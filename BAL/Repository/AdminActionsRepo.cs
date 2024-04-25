@@ -312,14 +312,14 @@ namespace BAL.Repository
 
             CloseCaseViewModel model = new()
             {
-                firstname = user.Firstname,
-                lastname = user.Lastname,
+                firstname = user.Firstname??" ",
+                lastname = user.Lastname??" ",
                 //dateofbirth = DateTime.Parse(dob),
-                phoneno = user.Phonenumber,
-                email = user.Email,
+                phoneno = user.Phonenumber ?? " ",
+                email = user.Email??"",
                 RequestwisefileList = files,
                 requestid = requestid,
-                confirmationNo = patient.Confirmationnumber
+                confirmationNo = patient.Confirmationnumber ?? " "
             };
             return model;
         }

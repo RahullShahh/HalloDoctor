@@ -4,6 +4,10 @@
     
             
 }
+
+* {
+    font-family: "Inter"!important;
+}
 .documents {
     margin-top: 5vh;
     margin-left: 15vw;

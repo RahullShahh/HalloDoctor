@@ -269,7 +269,7 @@ namespace HalloDoc_Project.Controllers
             ViewUploadsViewModel uploads = new()
             {
                 ConfirmationNo = user.Confirmationnumber ?? "",
-                Patientname = patients.Firstname  + " " + patients.Lastname ?? "",
+                Patientname = patients.Firstname + " " + patients.Lastname ?? "",
                 RequestID = requestid,
                 Requestwisefiles = requestFile,
                 PhysicianId = Physicianid.Physicianid
@@ -781,17 +781,17 @@ namespace HalloDoc_Project.Controllers
                             }
                             else
                             {
-                                TempData["shiftError"] = TempData["shiftError"] ?? "" + $"Shift for Physician exists on {startDateForWeekday} at interval {Starttime} - {Endtime}.";
+                                _notyf.Error("Shift for physician already exists in the selected interval");
                             }
                         }
                     }
                 }
-                TempData["shiftCreated"] = "Shift Created";
+                _notyf.Success("Shift Created");
                 return Json(new { success = true, successMessage = TempData["shiftCreated"], errorMessage = TempData["shiftError"] });
             }
             else
             {
-                TempData["shiftError"] = "Shift already exists for the physician in the time interval";
+                _notyf.Error("Shift already exists for the physician in the time interval");
                 return Json(new { success = true, successMessage = "", errorMessage = TempData["shiftError"] });
 
             }

@@ -16,6 +16,7 @@ using System.Collections;
 using AspNetCoreHero.ToastNotification.Abstractions;
 using BAL.Interfaces.IAccessMethods;
 using HalloDoc_Project.Authorization;
+using NuGet.Protocol.Plugins;
 
 
 namespace HalloDoc_Project.Controllers
@@ -706,40 +707,61 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public IActionResult CloseCase(CloseCaseViewModel model, int requestid)
         {
-            _adminActions.CloseCasePost(model, requestid);
-            return CloseCase(requestid);
+            try
+            {
+                _adminActions.CloseCasePost(model, requestid);
+                return CloseCase(requestid);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Close Case Post.");
+                return CloseCase(requestid);
+            }
         }
         public IActionResult CloseInstance(int reqid)
         {
-            _adminActions.ChangeRequestStatusToClosed(reqid);
-            return RedirectToAction("AdminDashboard","Admin");
+            try
+            {
+                _adminActions.ChangeRequestStatusToClosed(reqid);
+                _notyf.Success("Request closed successfully.");
+                return RedirectToAction("AdminDashboard", "Admin");
+            }
+            catch
+            {
+                _notyf.Error("Exception in Close Instance action.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region Assign Case Methods
-        //|----------------------------------------------------------------------------------------------------------|
-        //|ask doubt to varshil/kaushal that shall we use only iactionresult or shall we use async and await function|
-        //|----------------------------------------------------------------------------------------------------------|
-
         public IActionResult FilterPhysicianByRegion(int regionid)
         {
             var physicians = _helperMethods.GetPhysicianFromRegionId(regionid);
             return Json(physicians);
         }
-        public async Task<IActionResult> GetPhysicianForTransfer(int regionid)
+        public Task<IActionResult> GetPhysicianForTransfer(int regionid)
         {
             var result = (from physician in _context.Physicians
                           join region in _context.Physicianregions on
                          physician.Physicianid equals region.Physicianid
                           where physician.Regionid == regionid
                           select physician).Distinct().ToList();
-            return Json(result);
+            return Task.FromResult<IActionResult>(Json(result));
         }
         [HttpPost]
         public IActionResult AssignCase(int RequestId, string AssignPhysician, string AssignDescription)
         {
-            _adminActions.AssignCaseAction(RequestId, AssignPhysician, AssignDescription);
-            return Ok();
+            try
+            {
+                _adminActions.AssignCaseAction(RequestId, AssignPhysician, AssignDescription);
+                return Ok();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Assign Case Post.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -751,27 +773,52 @@ namespace HalloDoc_Project.Controllers
         }
         public IActionResult BusinessData(int BusinessId)
         {
-            var result = _context.Healthprofessionals.FirstOrDefault(x => x.Vendorid == BusinessId);
-            return Json(result);
+            try
+            {
+                var result = _context.Healthprofessionals.FirstOrDefault(x => x.Vendorid == BusinessId);
+                return Json(result);
+            }
+            catch
+            {
+                _notyf.Error("Something went wrong with BusinessDataMethod");
+                return Json(new { Message = "Something went wrong with BusinessDataMethod" });
+            }
         }
         public IActionResult SendOrders(int requestid)
         {
-            List<Healthprofessional> healthprofessionals = _context.Healthprofessionals.ToList();
-            List<Healthprofessionaltype> healthprofessionaltypes = _context.Healthprofessionaltypes.ToList();
-            SendOrderViewModel model = new()
+            try
             {
-                requestid = requestid,
-                healthprofessionals = healthprofessionals,
-                healthprofessionaltype = healthprofessionaltypes
-            };
-            return View(model);
+                List<Healthprofessional> healthprofessionals = _context.Healthprofessionals.ToList();
+                List<Healthprofessionaltype> healthprofessionaltypes = _context.Healthprofessionaltypes.ToList();
+                SendOrderViewModel model = new()
+                {
+                    requestid = requestid,
+                    healthprofessionals = healthprofessionals,
+                    healthprofessionaltype = healthprofessionaltypes
+                };
+                return View(model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in send orders get.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         [HttpPost]
         public IActionResult SendOrders(int requestid, SendOrderViewModel sendOrder)
         {
-            _adminActions.SendOrderAction(requestid, sendOrder);
-            return SendOrders(requestid);
+            try
+            {
+
+                _adminActions.SendOrderAction(requestid, sendOrder);
+                return SendOrders(requestid);
+            }
+            catch
+            {
+                _notyf.Error("Exception in placing the order");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -779,114 +826,190 @@ namespace HalloDoc_Project.Controllers
         [HttpGet]
         public IActionResult FinalizeDownload(int requestid)
         {
-            var EncounterModel = _encounterForm.EncounterFormGet(requestid);
-            if (EncounterModel == null)
+            try
             {
-                return NotFound();
+                var EncounterModel = _encounterForm.EncounterFormGet(requestid);
+                if (EncounterModel == null)
+                {
+                    return NotFound();
+                }
+                return new ViewAsPdf("EncounterFormFinalizeView", EncounterModel)
+                {
+                    FileName = "FinalizedEncounterForm.pdf"
+                };
             }
-            return new ViewAsPdf("EncounterFormFinalizeView", EncounterModel)
+            catch
             {
-                FileName = "FinalizedEncounterForm.pdf"
-            };
+                _notyf.Error("Exception in FinalizeDownload.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult FinalizeForm(int requestid)
         {
-            Encounterform encounterRecord = _context.Encounterforms.FirstOrDefault(x => x.Requestid == requestid);
-            if (encounterRecord != null)
+            try
             {
-                encounterRecord.Isfinalize = true;
-                _context.Encounterforms.Update(encounterRecord);
+                Encounterform encounterRecord = _context.Encounterforms.FirstOrDefault(x => x.Requestid == requestid);
+                if (encounterRecord != null)
+                {
+                    encounterRecord.Isfinalize = true;
+                    _context.Encounterforms.Update(encounterRecord);
+                }
+                _context.SaveChanges();
+                return RedirectToAction("AdminDashboard", "Admin");
             }
-            _context.SaveChanges();
-            return RedirectToAction("AdminDashboard", "Admin");
+            catch
+            {
+                _notyf.Error("Exception in FinalizeForm.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult EncounterForm(int requestId, EncounterFormViewModel EncModel)
         {
-            EncModel = _encounterForm.EncounterFormGet(requestId);
-            var RequestExistStatus = _context.Encounterforms.FirstOrDefault(x => x.Requestid == requestId);
-            if (RequestExistStatus == null)
+            try
             {
-                EncModel.IfExists = false;
+
+                EncModel = _encounterForm.EncounterFormGet(requestId);
+                var RequestExistStatus = _context.Encounterforms.FirstOrDefault(x => x.Requestid == requestId);
+                if (RequestExistStatus == null)
+                {
+                    EncModel.IfExists = false;
+                }
+                if (RequestExistStatus != null)
+                {
+                    EncModel.IfExists = true;
+                }
+                return View("EncounterForm", EncModel);
             }
-            if (RequestExistStatus != null)
+            catch
             {
-                EncModel.IfExists = true;
+                _notyf.Error("Exception in Encounter form method.");
+                return RedirectToAction("AdminDashboard");
             }
-            return View("EncounterForm", EncModel);
         }
         [HttpPost]
         public IActionResult EncounterForm(EncounterFormViewModel model)
         {
-            _encounterForm.EncounterFormPost(model.requestId, model);
-            return EncounterForm(model.requestId, model);
+            try
+            {
+                _encounterForm.EncounterFormPost(model.requestId, model);
+                return EncounterForm(model.requestId, model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in encounter form method.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region View Uploads Methods
         public IActionResult DeleteFile(int fileid, int requestid)
         {
-            var fileRequest = _context.Requestwisefiles.FirstOrDefault(x => x.Requestwisefileid == fileid);
-            fileRequest.Isdeleted = true;
+            try
+            {
+                var fileRequest = _context.Requestwisefiles.FirstOrDefault(x => x.Requestwisefileid == fileid);
+                fileRequest.Isdeleted = true;
 
-            _context.Requestwisefiles.Update(fileRequest);
-            _context.SaveChanges();
+                _context.Requestwisefiles.Update(fileRequest);
+                _context.SaveChanges();
 
-            return RedirectToAction("ViewUploads", new { requestid = requestid });
+                return RedirectToAction("ViewUploads", new { requestid = requestid });
+            }
+            catch
+            {
+                _notyf.Error("Exception in Delete files.");
+
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult DeleteAllFiles(int requestid)
         {
-            var request = _context.Requestwisefiles.Where(r => r.Requestid == requestid && r.Isdeleted != true).ToList();
-            for (int i = 0; i < request.Count; i++)
+            try
             {
-                request[i].Isdeleted = true;
-                _context.Update(request[i]);
+
+                var request = _context.Requestwisefiles.Where(r => r.Requestid == requestid && r.Isdeleted != true).ToList();
+                for (int i = 0; i < request.Count; i++)
+                {
+                    request[i].Isdeleted = true;
+                    _context.Update(request[i]);
+                }
+                _context.SaveChanges();
+                return RedirectToAction("ViewUploads", new { requestid = requestid });
             }
-            _context.SaveChanges();
-            return RedirectToAction("ViewUploads", new { requestid = requestid });
+            catch
+            {
+                _notyf.Error("Exception in Delete all files");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult ViewUploads(int requestid)
         {
-
-            var user = _context.Requests.FirstOrDefault(r => r.Requestid == requestid);
-            var requestFile = _context.Requestwisefiles.Where(r => r.Requestid == requestid).ToList();
-            var requests = _context.Requests.FirstOrDefault(r => r.Requestid == requestid);
-
-            ViewUploadsViewModel uploads = new()
+            try
             {
-                ConfirmationNo = requests.Confirmationnumber,
-                Patientname = user.Firstname + " " + user.Lastname,
-                RequestID = requestid,
-                Requestwisefiles = requestFile
-            };
-            return View(uploads);
+
+                var user = _context.Requests.FirstOrDefault(r => r.Requestid == requestid);
+                var requestFile = _context.Requestwisefiles.Where(r => r.Requestid == requestid).ToList();
+                var requests = _context.Requests.FirstOrDefault(r => r.Requestid == requestid);
+
+                ViewUploadsViewModel uploads = new()
+                {
+                    ConfirmationNo = requests.Confirmationnumber,
+                    Patientname = user.Firstname + " " + user.Lastname,
+                    RequestID = requestid,
+                    Requestwisefiles = requestFile
+                };
+                return View(uploads);
+            }
+            catch
+            {
+                _notyf.Error("Exception in View Uploads");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult ViewUploads(ViewUploadsViewModel uploads)
         {
-            if (uploads.File != null)
+            try
             {
-                var uniqueid = Guid.NewGuid().ToString();
-                var path = _environment.WebRootPath;
-                _fileOperations.insertfilesunique(uploads.File, uniqueid, path);
 
-                var filestring = Path.GetFileNameWithoutExtension(uploads.File.FileName);
-                var extensionstring = Path.GetExtension(uploads.File.FileName);
-                Requestwisefile requestwisefile = new()
+                if (uploads.File != null)
                 {
-                    Filename = uniqueid + "$" + uploads.File.FileName,
-                    Requestid = uploads.RequestID,
-                    Createddate = DateTime.Now
-                };
-                _context.Update(requestwisefile);
-                _context.SaveChanges();
+                    var uniqueid = Guid.NewGuid().ToString();
+                    var path = _environment.WebRootPath;
+                    _fileOperations.insertfilesunique(uploads.File, uniqueid, path);
+
+                    var filestring = Path.GetFileNameWithoutExtension(uploads.File.FileName);
+                    var extensionstring = Path.GetExtension(uploads.File.FileName);
+                    Requestwisefile requestwisefile = new()
+                    {
+                        Filename = uniqueid + "$" + uploads.File.FileName,
+                        Requestid = uploads.RequestID,
+                        Createddate = DateTime.Now
+                    };
+                    _context.Update(requestwisefile);
+                    _context.SaveChanges();
+                }
+                return RedirectToAction("ViewUploads", new { requestid = uploads.RequestID });
             }
-            return RedirectToAction("ViewUploads", new { requestid = uploads.RequestID });
+            catch
+            {
+                _notyf.Error("Exception in View Uploads post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult SendMail(int requestid)
         {
-            var path = _environment.WebRootPath;
-            _emailService.SendEmailWithAttachments(requestid, path);
-            return RedirectToAction("ViewUploads", "Admin", new { requestid = requestid });
+            try
+            {
+                var path = _environment.WebRootPath;
+                _emailService.SendEmailWithAttachments(requestid, path);
+                return RedirectToAction("ViewUploads", "Admin", new { requestid = requestid });
+            }
+            catch
+            {
+                _notyf.Error("Exception in send mail");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -895,20 +1018,37 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public IActionResult BlockCase(int requestid, string blocknotes)
         {
-            _adminActions.BlockCaseAction(requestid, blocknotes);
-            return Ok();
+            try
+            {
+                _adminActions.BlockCaseAction(requestid, blocknotes);
+                return Ok();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Block Case Post.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region View Case Methods
         public IActionResult ViewCase(int requestid)
         {
-            if (ModelState.IsValid)
+            try
             {
-                ViewCaseViewModel vc = _adminActions.ViewCaseAction(requestid);
-                return View(vc);
+
+                if (ModelState.IsValid)
+                {
+                    ViewCaseViewModel vc = _adminActions.ViewCaseAction(requestid);
+                    return View(vc);
+                }
+                return View();
             }
-            return View();
+            catch
+            {
+                _notyf.Error("Exception in View Case Get.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -916,8 +1056,17 @@ namespace HalloDoc_Project.Controllers
         #region View Notes Method
         public IActionResult ViewNotes(int requestid)
         {
-            ViewCaseViewModel vn = new ViewCaseViewModel();
-            return View();
+            try
+            {
+
+                ViewCaseViewModel vn = new ViewCaseViewModel();
+                return View();
+            }
+            catch
+            {
+                _notyf.Error("Exception in View Notes get.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -926,8 +1075,16 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public ActionResult CancelCase(int requestid, string Reason, string Description)
         {
-            _adminActions.CancelCaseAction(requestid, Reason, Description);
-            return Ok();
+            try
+            {
+                _adminActions.CancelCaseAction(requestid, Reason, Description);
+                return Ok();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Cancel Case");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -936,10 +1093,18 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public IActionResult TransferCase(int RequestId, string TransferPhysician, string TransferDescription)
         {
-            var email = HttpContext.Session.GetString("Email");
-            var admin = _context.Admins.FirstOrDefault(x => x.Email == email);
-            _adminActions.TransferCase(RequestId, TransferPhysician, TransferDescription, admin.Adminid);
-            return Ok();
+            try
+            {
+                var email = HttpContext.Session.GetString("Email");
+                var admin = _context.Admins.FirstOrDefault(x => x.Email == email);
+                _adminActions.TransferCase(RequestId, TransferPhysician, TransferDescription, admin.Adminid);
+                return Ok();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Transfer Case");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -947,9 +1112,17 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public bool ClearCaseModal(int requestid)
         {
-            string AdminEmail = HttpContext.Session.GetString("Email");
-            //Admin admin = _context.Admins.GetFirstOrDefault(a => a.Email == AdminEmail);
-            return _adminActions.ClearCaseModal(requestid);
+            try
+            {
+                string AdminEmail = HttpContext.Session.GetString("Email");
+                //Admin admin = _context.Admins.GetFirstOrDefault(a => a.Email == AdminEmail);
+                return _adminActions.ClearCaseModal(requestid);
+            }
+            catch
+            {
+                _notyf.Error("Exception in clear case modal submission");
+                return false;
+            }
         }
         #endregion
 
@@ -957,13 +1130,22 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public IActionResult SendAgreement(int RequestId, string PhoneNo, string email)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var AgreementLink = Url.Action("ReviewAgreement", "Guest", new { ReqId = RequestId }, Request.Scheme);
-                _emailService.SendAgreementLink(RequestId, AgreementLink, email);
-                return RedirectToAction("AdminDashboard", "Guest");
+
+                if (ModelState.IsValid)
+                {
+                    var AgreementLink = Url.Action("ReviewAgreement", "Guest", new { ReqId = RequestId }, Request.Scheme);
+                    _emailService.SendAgreementLink(RequestId, AgreementLink, email);
+                    return RedirectToAction("AdminDashboard", "Guest");
+                }
+                return View();
             }
-            return View();
+            catch
+            {
+                _notyf.Error("Exception in Sending Agreement");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -971,25 +1153,38 @@ namespace HalloDoc_Project.Controllers
         #endregion
 
         #region ACCESS
-        //public IActionResult UserAccess()
-        //{
-        //    return View("AccessViews/UserAccess");
-        //}
-
         public IActionResult AccountAccess()
         {
-            var roles = _context.Roles.ToList();
-            AccountAccessViewModel AccountAccess = new AccountAccessViewModel()
+            try
             {
-                Roles = roles,
-            };
-            return View("AccessViews/AccountAccess", AccountAccess);
+
+                var roles = _context.Roles.ToList();
+                AccountAccessViewModel AccountAccess = new AccountAccessViewModel()
+                {
+                    Roles = roles,
+                };
+                return View("AccessViews/AccountAccess", AccountAccess);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Account Access");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult CreateRole()
         {
-            CreateRoleViewModel RoleModel = new CreateRoleViewModel();
-            RoleModel.AccountType = _context.Aspnetroles.ToList();
-            return View("AccessViews/CreateRole", RoleModel);
+            try
+            {
+
+                CreateRoleViewModel RoleModel = new CreateRoleViewModel();
+                RoleModel.AccountType = _context.Aspnetroles.ToList();
+                return View("AccessViews/CreateRole", RoleModel);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Create role.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public List<Menu> MenuFilter(int AccountType)
         {
@@ -998,114 +1193,163 @@ namespace HalloDoc_Project.Controllers
         }
         public bool CreateNewRole(string Rolename, int AccountType, List<int> checkboxes)
         {
-            var AdminEmail = HttpContext.Session.GetString("Email");
-            Admin admin = _context.Admins.FirstOrDefault(x => x.Email == AdminEmail);
-
-            Role roles = new Role()
+            try
             {
-                Name = Rolename,
-                Accounttype = (short)AccountType,
-                Createdby = admin.Aspnetuserid,
-                Createddate = DateTime.Now,
-                Isdeleted = false,
-            };
-            _context.Roles.Add(roles);
-            _context.SaveChanges();
+                var AdminEmail = HttpContext.Session.GetString("Email");
+                Admin admin = _context.Admins.FirstOrDefault(x => x.Email == AdminEmail);
 
-            for (int i = 0; i < checkboxes.Count; i++)
-            {
-                Rolemenu rolemenu = new Rolemenu()
+                Role roles = new Role()
                 {
-                    Roleid = roles.Roleid,
-                    Menuid = checkboxes[i],
+                    Name = Rolename,
+                    Accounttype = (short)AccountType,
+                    Createdby = admin.Aspnetuserid,
+                    Createddate = DateTime.Now,
+                    Isdeleted = false,
                 };
-                _context.Rolemenus.Add(rolemenu);
+                _context.Roles.Add(roles);
+                _context.SaveChanges();
+
+                for (int i = 0; i < checkboxes.Count; i++)
+                {
+                    Rolemenu rolemenu = new Rolemenu()
+                    {
+                        Roleid = roles.Roleid,
+                        Menuid = checkboxes[i],
+                    };
+                    _context.Rolemenus.Add(rolemenu);
+                }
+                _context.SaveChanges();
+                return true;
             }
-            _context.SaveChanges();
-            return true;
+            catch
+            {
+                _notyf.Error("Exception in Creating new role method.");
+                return false;
+            }
         }
 
         public IActionResult EditRoleAccountAccess(int id)
         {
+            try
+            {
+                EditAccessViewModel model = new EditAccessViewModel();
+                var role = _context.Roles.FirstOrDefault(x => x.Roleid == id);
+                List<Menu> menu = _context.Menus.Where(x => x.Accounttype == role.Accounttype).ToList();
+                List<int> rolmenu = _context.Rolemenus.Where(x => x.Roleid == id).Select(x => (int)x.Menuid).ToList();
+                var accountType = _context.Aspnetroles.ToList();
+                model.id = id;
+                model.role = role.Name;
+                model.type = (short)role.Accounttype;
+                model.accountTypes = accountType;
+                model.menu = menu;
+                model.rolemenu = rolmenu;
 
-            EditAccessViewModel model = new EditAccessViewModel();
-
-            var role = _context.Roles.FirstOrDefault(x => x.Roleid == id);
-            List<Menu> menu = _context.Menus.Where(x => x.Accounttype == role.Accounttype).ToList();
-            List<int> rolmenu = _context.Rolemenus.Where(x => x.Roleid == id).Select(x => (int)x.Menuid).ToList();
-            var accountType = _context.Aspnetroles.ToList();
-
-            model.id = id;
-            model.role = role.Name;
-            model.type = (short)role.Accounttype;
-            model.accountTypes = accountType;
-            model.menu = menu;
-            model.rolemenu = rolmenu;
-
-            return View("AccessViews/EditAccess", model);
+                return View("AccessViews/EditAccess", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Edit Role Account Access.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public bool SaveEditRole(int id, string role, List<int> newPages)
         {
-            var AdminEmail = HttpContext.Session.GetString("Email");
-            Admin admin = _context.Admins.FirstOrDefault(x => x.Email == AdminEmail);
-
-            Role roles = _context.Roles.FirstOrDefault(u => u.Roleid == id);
-            List<Rolemenu> oldList = _context.Rolemenus.Where(x => x.Roleid == id).ToList();
-
-            roles.Name = role;
-            roles.Modifieddate = DateTime.Now;
-            roles.Modifiedby = admin.Aspnetuserid;
-
-            _context.Roles.Update(roles);
-
-            for (int i = 0; i < oldList.Count; i++)
+            try
             {
-                _context.Rolemenus.Remove(oldList[i]);
-            }
-            for (int x = 0; x < newPages.Count; x++)
-            {
-                Rolemenu rolemenu = new Rolemenu()
+
+                var AdminEmail = HttpContext.Session.GetString("Email");
+                Admin admin = _context.Admins.FirstOrDefault(x => x.Email == AdminEmail);
+
+                Role roles = _context.Roles.FirstOrDefault(u => u.Roleid == id);
+                List<Rolemenu> oldList = _context.Rolemenus.Where(x => x.Roleid == id).ToList();
+
+                roles.Name = role;
+                roles.Modifieddate = DateTime.Now;
+                roles.Modifiedby = admin.Aspnetuserid;
+
+                _context.Roles.Update(roles);
+
+                for (int i = 0; i < oldList.Count; i++)
                 {
-                    Roleid = id,
-                    Menuid = newPages[x]
-                };
-                _context.Rolemenus.Add(rolemenu);
+                    _context.Rolemenus.Remove(oldList[i]);
+                }
+                for (int x = 0; x < newPages.Count; x++)
+                {
+                    Rolemenu rolemenu = new Rolemenu()
+                    {
+                        Roleid = id,
+                        Menuid = newPages[x]
+                    };
+                    _context.Rolemenus.Add(rolemenu);
+                }
+                _context.SaveChanges();
+
+
+                return true;
             }
-            _context.SaveChanges();
-
-
-            return true;
+            catch
+            {
+                _notyf.Error("Exception in Save edit role method.");
+                return false;
+            }
         }
 
         #region User Access
         public IActionResult UserAccess(int accountType)
         {
-            UserAccessModel model = _userAccountAccessMethods.UserAccess(accountType);
-            return View("AccessViews/UserAccess", model);
+            try
+            {
+
+                UserAccessModel model = _userAccountAccessMethods.UserAccess(accountType);
+                return View("AccessViews/UserAccess", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in User Access Get");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult AccountTypeFilter(int accountType)
         {
-            UserAccessModel model = _userAccountAccessMethods.UserAccess(accountType);
-            return PartialView("AccessViews/UserAccessPartialView", model);
+            try
+            {
+
+                UserAccessModel model = _userAccountAccessMethods.UserAccess(accountType);
+                return PartialView("AccessViews/UserAccessPartialView", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Account type filter.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult DeleteAccountAccessRoles(int id)
         {
-            var Adminemail = HttpContext.Session.GetString("Email");
-            Admin admin = _context.Admins.FirstOrDefault(get => get.Email == Adminemail);
-            Role roles = _context.Roles.FirstOrDefault(u => u.Roleid == id);
-            if (roles != null)
+            try
             {
 
-                roles.Modifieddate = DateTime.Now;
-                roles.Modifiedby = admin.Aspnetuserid;
-                roles.Isdeleted = true;
+                var Adminemail = HttpContext.Session.GetString("Email");
+                Admin admin = _context.Admins.FirstOrDefault(get => get.Email == Adminemail);
+                Role roles = _context.Roles.FirstOrDefault(u => u.Roleid == id);
+                if (roles != null)
+                {
 
-                _context.Roles.Update(roles);
+                    roles.Modifieddate = DateTime.Now;
+                    roles.Modifiedby = admin.Aspnetuserid;
+                    roles.Isdeleted = true;
+
+                    _context.Roles.Update(roles);
+                }
+                _context.SaveChanges();
+                return RedirectToAction("AccountAccess");
             }
-            _context.SaveChanges();
-            return RedirectToAction("AccountAccess");
+            catch
+            {
+                _notyf.Error("Exception in Delete Account Access Roles");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
 
@@ -1117,23 +1361,41 @@ namespace HalloDoc_Project.Controllers
 
         public IActionResult CreateAdminAccount()
         {
-            CreateAdminViewModel profile = new CreateAdminViewModel();
-            profile.Regions = _adminActions.GetRegionsList();
-            return View("AccessViews/CreateAdminAccount", profile);
+            try
+            {
+
+                CreateAdminViewModel profile = new CreateAdminViewModel();
+                profile.Regions = _adminActions.GetRegionsList();
+                return View("AccessViews/CreateAdminAccount", profile);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Creating Admin Account.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult CreateAdminAccount(CreateAdminViewModel profile, string[] regions)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _admin.CreateAdminAccountPost(profile, regions);
-                _notyf.Success("New Admin Created");
-                return RedirectToAction("CreateAdminAccount");
+                if (ModelState.IsValid)
+                {
+                    _admin.CreateAdminAccountPost(profile, regions);
+                    _notyf.Success("New Admin Created");
+                    return RedirectToAction("CreateAdminAccount");
+                }
+                else
+                {
+                    profile.Regions = _adminActions.GetRegionsList();
+                    _notyf.Error("Insufficient Data Provided.");
+                    return View("AccessViews/CreateAdminAccount", profile);
+                }
             }
-            else
+            catch
             {
-                profile.Regions = _adminActions.GetRegionsList();
-                return View("AccessViews/CreateAdminAccount", profile);
+                _notyf.Error("Exception in Create Admin Account Post");
+                return RedirectToAction("AdminDashboard");
             }
 
         }
@@ -1146,98 +1408,124 @@ namespace HalloDoc_Project.Controllers
         #region Create Physician
         public IActionResult CreatePhysician()
         {
-            EditPhysicianViewModel model = new EditPhysicianViewModel
+            try
             {
-                Role = _context.Roles.ToList(),
-                States = _context.Regions.ToList()
-            };
-            return View("ProviderViews/CreatePhysician", model);
+
+                EditPhysicianViewModel model = new EditPhysicianViewModel
+                {
+                    Role = _context.Roles.ToList(),
+                    States = _context.Regions.ToList()
+                };
+                return View("ProviderViews/CreatePhysician", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Create Physician get.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult CreatePhysician(EditPhysicianViewModel Model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                Physician Doctor = _createEditProviderRepo.AddNewPhysicianDetails(Model);
-                if (Model.SelectPhoto != null)
-                {
-                    var filename = "Photo";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.SelectPhoto, filepath, filename);
-                    Doctor.Photo = Guid.NewGuid().ToString() + Model.SelectPhoto.Name;
-                }
-                if (Model.SelectSignature != null)
-                {
-                    var filename = "Signature";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.SelectSignature, filepath, filename);
-                    Doctor.Signature = Guid.NewGuid().ToString() + Model.SelectSignature.Name;
-                }
-                if (Model.IndependentContractAgreement != null)
-                {
-                    var filename = "ICA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.IndependentContractAgreement, filepath, filename);
-                    Doctor.Isagreementdoc = true;
-                }
-                if (Model.BackgroundCheck != null)
-                {
-                    var filename = "BC";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.BackgroundCheck, filepath, filename);
-                    Doctor.Isbackgrounddoc = true;
-                }
-                if (Model.HIPAACompliance != null)
-                {
-                    var filename = "HIPPA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.HIPAACompliance, filepath, filename);
-                    Doctor.Istrainingdoc = true;
-                }
-                if (Model.NonDisclosureAgreement != null)
-                {
-                    var filename = "NDA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
-                    InsertFileAfterRename(Model.NonDisclosureAgreement, filepath, filename);
-                    Doctor.Isnondisclosuredoc = true;
-                }
 
-                _context.Physicians.Update(Doctor);
-                _context.SaveChanges();
-
-                for (int i = 0; i < Model.SelectedRegions.Count; i++)
+                if (ModelState.IsValid)
                 {
-                    var physicinRegion = new Physicianregion
+                    Physician Doctor = _createEditProviderRepo.AddNewPhysicianDetails(Model);
+                    if (Model.SelectPhoto != null)
                     {
-                        Physicianid = Doctor.Physicianid,
-                        Regionid = Model.SelectedRegions[i]
-                    };
-                    _context.Physicianregions.Add(physicinRegion);
+                        var filename = "Photo";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.SelectPhoto, filepath, filename);
+                        Doctor.Photo = Guid.NewGuid().ToString() + Model.SelectPhoto.Name;
+                    }
+                    if (Model.SelectSignature != null)
+                    {
+                        var filename = "Signature";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.SelectSignature, filepath, filename);
+                        Doctor.Signature = Guid.NewGuid().ToString() + Model.SelectSignature.Name;
+                    }
+                    if (Model.IndependentContractAgreement != null)
+                    {
+                        var filename = "ICA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.IndependentContractAgreement, filepath, filename);
+                        Doctor.Isagreementdoc = true;
+                    }
+                    if (Model.BackgroundCheck != null)
+                    {
+                        var filename = "BC";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.BackgroundCheck, filepath, filename);
+                        Doctor.Isbackgrounddoc = true;
+                    }
+                    if (Model.HIPAACompliance != null)
+                    {
+                        var filename = "HIPPA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.HIPAACompliance, filepath, filename);
+                        Doctor.Istrainingdoc = true;
+                    }
+                    if (Model.NonDisclosureAgreement != null)
+                    {
+                        var filename = "NDA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Doctor.Physicianid.ToString());
+                        InsertFileAfterRename(Model.NonDisclosureAgreement, filepath, filename);
+                        Doctor.Isnondisclosuredoc = true;
+                    }
+
+                    _context.Physicians.Update(Doctor);
+                    _context.SaveChanges();
+
+                    for (int i = 0; i < Model.SelectedRegions.Count; i++)
+                    {
+                        var physicinRegion = new Physicianregion
+                        {
+                            Physicianid = Doctor.Physicianid,
+                            Regionid = Model.SelectedRegions[i]
+                        };
+                        _context.Physicianregions.Add(physicinRegion);
+                    }
+                    _context.SaveChanges();
                 }
-                _context.SaveChanges();
+                _notyf.Success("New Physician Created");
+                Model.Role = _context.Roles.ToList();
+                Model.States = _context.Regions.ToList();
+                return View("ProviderViews/CreatePhysician", Model);
             }
-            _notyf.Success("New Physician Created");
-            Model.Role = _context.Roles.ToList();
-            Model.States = _context.Regions.ToList();
-            return View("ProviderViews/CreatePhysician", Model);
+            catch
+            {
+                _notyf.Error("Exception in Creating New Provider");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult SendEmailToProvider(String RadioButtonValue, String EmailMessage, String PhysicianId)
         {
-            var physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == int.Parse(PhysicianId));
-            if (RadioButtonValue == "1")
+            try
             {
+                var physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == int.Parse(PhysicianId));
+                if (RadioButtonValue == "1")
+                {
 
-            }
-            if (RadioButtonValue == "2" && physician.Email != null)
-            {
-                _emailService.SendEmailMessage(EmailMessage, physician.Email);
-            }
-            else if (RadioButtonValue == "3")
-            {
+                }
+                if (RadioButtonValue == "2" && physician.Email != null)
+                {
+                    _emailService.SendEmailMessage(EmailMessage, physician.Email);
+                }
+                else if (RadioButtonValue == "3")
+                {
 
+                }
+                return Ok();
             }
-            return Ok();
+            catch
+            {
+                _notyf.Error("Exception in Sending Mail to Provider");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -1245,21 +1533,38 @@ namespace HalloDoc_Project.Controllers
         #region Edit Physician
         public IActionResult EditPhysicianProfile(int PhysicianId)
         {
-            EditPhysicianViewModel EditPhysician = _createEditProviderRepo.GetPhysicianDetailsForEdit(PhysicianId);
-            return View("ProviderViews/EditPhysicianProfile", EditPhysician);
+            try
+            {
+                EditPhysicianViewModel EditPhysician = _createEditProviderRepo.GetPhysicianDetailsForEdit(PhysicianId);
+                return View("ProviderViews/EditPhysicianProfile", EditPhysician);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Edit Physician Profile");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult SubmitPhysicianAccountInfo(EditPhysicianViewModel PhysicianAccountInfo)
         {
-            var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == PhysicianAccountInfo.PhysicianId);
-            if (Physician != null)
+            try
             {
-                Physician.Status = PhysicianAccountInfo.Status;
-                //Physician.Roleid = PhysicianAccountInfo.Role;
+                var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == PhysicianAccountInfo.PhysicianId);
+                if (Physician != null)
+                {
+                    Physician.Status = PhysicianAccountInfo.Status;
+                    //Physician.Roleid = PhysicianAccountInfo.Role;
+                }
+                _context.Physicians.Update(Physician);
+                _context.SaveChanges();
+                _notyf.Success("Details Updated Successfully.");
+                return EditPhysicianProfile(PhysicianAccountInfo.PhysicianId);
             }
-            _context.Physicians.Update(Physician);
-            _context.SaveChanges();
-            return EditPhysicianProfile(PhysicianAccountInfo.PhysicianId);
+            catch
+            {
+                _notyf.Error("Exception in Submitting physician account info");
+                return EditPhysicianProfile(PhysicianAccountInfo.PhysicianId);
+            }
         }
         [HttpPost]
         public IActionResult SubmitPhysicianInfo(EditPhysicianViewModel PhysicianInfoModel, string[] PhysicianLocations)
@@ -1294,117 +1599,145 @@ namespace HalloDoc_Project.Controllers
                         }
                     }
                 }
+                _notyf.Success("Details Updated Successfully.");
                 return EditPhysicianProfile(PhysicianInfoModel.PhysicianId);
             }
-            catch (Exception ex)
+            catch
             {
-                _notyf.Error(ex.Message);
+                _notyf.Error("Exception in Submitting physician information");
                 return EditPhysicianProfile(PhysicianInfoModel.PhysicianId);
             }
         }
         [HttpPost]
         public IActionResult SubmitPhysicianMailingBillingDetails(EditPhysicianViewModel MailingBillingModel)
         {
-            //GetLatitudeLongitude(MailingBillingModel);
-            var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == MailingBillingModel.PhysicianId);
-            if (Physician != null)
+            try
             {
-                Physician.Address1 = MailingBillingModel.Address1;
-                Physician.Address2 = MailingBillingModel.Address2;
-                Physician.City = MailingBillingModel.City;
-                Physician.Regionid = MailingBillingModel.Regionid;
-                Physician.Zip = MailingBillingModel.ZipCode;
-                Physician.Altphone = MailingBillingModel.BillingPhoneNo;
+                //GetLatitudeLongitude(MailingBillingModel);
+                var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == MailingBillingModel.PhysicianId);
+                if (Physician != null)
+                {
+                    Physician.Address1 = MailingBillingModel.Address1;
+                    Physician.Address2 = MailingBillingModel.Address2;
+                    Physician.City = MailingBillingModel.City;
+                    Physician.Regionid = MailingBillingModel.Regionid;
+                    Physician.Zip = MailingBillingModel.ZipCode;
+                    Physician.Altphone = MailingBillingModel.BillingPhoneNo;
+                }
+                _context.Physicians.Update(Physician);
+                _context.SaveChanges();
+                _notyf.Success("Details Updated Successfully.");
+                return EditPhysicianProfile(MailingBillingModel.PhysicianId);
             }
-            _context.Physicians.Update(Physician);
-            _context.SaveChanges();
-            return EditPhysicianProfile(MailingBillingModel.PhysicianId);
+            catch
+            {
+                _notyf.Error("Exception in Submitting mailing and billing detials");
+                return EditPhysicianProfile(MailingBillingModel.PhysicianId);
+            }
         }
         [HttpPost]
         public IActionResult SubmitProviderProfile(EditPhysicianViewModel ProviderProfile)
         {
-            var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == ProviderProfile.PhysicianId);
-            if (Physician != null)
+            try
             {
-                Physician.Businessname = ProviderProfile.BusinessName;
-                Physician.Businesswebsite = ProviderProfile.BusinessWebsite;
-                if (ProviderProfile.SelectPhoto != null)
+
+                var Physician = _context.Physicians.FirstOrDefault(x => x.Physicianid == ProviderProfile.PhysicianId);
+                if (Physician != null)
                 {
-                    var filename = "Photo";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", ProviderProfile.PhysicianId.ToString());
-                    InsertFileAfterRename(ProviderProfile.SelectPhoto, filepath, filename);
-                    Physician.Photo = Guid.NewGuid().ToString() + ProviderProfile.SelectPhoto.Name;
+                    Physician.Businessname = ProviderProfile.BusinessName;
+                    Physician.Businesswebsite = ProviderProfile.BusinessWebsite;
+                    if (ProviderProfile.SelectPhoto != null)
+                    {
+                        var filename = "Photo";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", ProviderProfile.PhysicianId.ToString());
+                        InsertFileAfterRename(ProviderProfile.SelectPhoto, filepath, filename);
+                        Physician.Photo = Guid.NewGuid().ToString() + ProviderProfile.SelectPhoto.Name;
+                    }
+                    if (ProviderProfile.SelectSignature != null)
+                    {
+                        var filename = "Signature";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", ProviderProfile.PhysicianId.ToString());
+                        InsertFileAfterRename(ProviderProfile.SelectSignature, filepath, filename);
+                        Physician.Signature = Guid.NewGuid().ToString() + ProviderProfile.SelectSignature.Name;
+                    }
                 }
-                if (ProviderProfile.SelectSignature != null)
-                {
-                    var filename = "Signature";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", ProviderProfile.PhysicianId.ToString());
-                    InsertFileAfterRename(ProviderProfile.SelectSignature, filepath, filename);
-                    Physician.Signature = Guid.NewGuid().ToString() + ProviderProfile.SelectSignature.Name;
-                }
+                _context.Physicians.Update(Physician);
+                _context.SaveChanges();
+                return EditPhysicianProfile(ProviderProfile.PhysicianId);
             }
-            _context.Physicians.Update(Physician);
-            _context.SaveChanges();
-            return EditPhysicianProfile(ProviderProfile.PhysicianId);
+            catch
+            {
+                _notyf.Error("Exception in Submitting Provider Profile detials");
+                return EditPhysicianProfile(ProviderProfile.PhysicianId);
+            }
         }
         public IActionResult UploadOnboardingDocuments(EditPhysicianViewModel Model)
         {
-            var PhysicianDocuments = _context.Physicians.FirstOrDefault(x => x.Physicianid == Model.PhysicianId);
-            if (PhysicianDocuments != null)
+            try
             {
-                if (Model.SelectPhoto != null)
+                var PhysicianDocuments = _context.Physicians.FirstOrDefault(x => x.Physicianid == Model.PhysicianId);
+                if (PhysicianDocuments != null)
                 {
-                    var filename = "Photo";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.SelectPhoto, filepath, filename);
-                    PhysicianDocuments.Photo = Guid.NewGuid().ToString() + Model.SelectPhoto.Name;
+                    if (Model.SelectPhoto != null)
+                    {
+                        var filename = "Photo";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.SelectPhoto, filepath, filename);
+                        PhysicianDocuments.Photo = Guid.NewGuid().ToString() + Model.SelectPhoto.Name;
+                    }
+                    if (Model.SelectSignature != null)
+                    {
+                        var filename = "Signature";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.SelectSignature, filepath, filename);
+                        PhysicianDocuments.Signature = Guid.NewGuid().ToString() + Model.SelectSignature.Name;
+                    }
+                    if (Model.IndependentContractAgreement != null)
+                    {
+                        var filename = "ICA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.IndependentContractAgreement, filepath, filename);
+                        PhysicianDocuments.Isagreementdoc = true;
+                    }
+                    if (Model.BackgroundCheck != null)
+                    {
+                        var filename = "BC";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.BackgroundCheck, filepath, filename);
+                        PhysicianDocuments.Isbackgrounddoc = true;
+                    }
+                    if (Model.HIPAACompliance != null)
+                    {
+                        var filename = "HIPPA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.HIPAACompliance, filepath, filename);
+                        PhysicianDocuments.Istrainingdoc = true;
+                    }
+                    if (Model.NonDisclosureAgreement != null)
+                    {
+                        var filename = "NDA";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.NonDisclosureAgreement, filepath, filename);
+                        PhysicianDocuments.Isnondisclosuredoc = true;
+                    }
+                    if (Model.LicenseDocument != null)
+                    {
+                        var filename = "LD";
+                        var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
+                        InsertFileAfterRename(Model.LicenseDocument, filepath, filename);
+                        PhysicianDocuments.Islicensedoc = true;
+                    }
+                    _context.Physicians.Update(PhysicianDocuments);
+                    _context.SaveChanges();
+                    _notyf.Success("Documents Uploaded Successfully.");
                 }
-                if (Model.SelectSignature != null)
-                {
-                    var filename = "Signature";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.SelectSignature, filepath, filename);
-                    PhysicianDocuments.Signature = Guid.NewGuid().ToString() + Model.SelectSignature.Name;
-                }
-                if (Model.IndependentContractAgreement != null)
-                {
-                    var filename = "ICA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.IndependentContractAgreement, filepath, filename);
-                    PhysicianDocuments.Isagreementdoc = true;
-                }
-                if (Model.BackgroundCheck != null)
-                {
-                    var filename = "BC";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.BackgroundCheck, filepath, filename);
-                    PhysicianDocuments.Isbackgrounddoc = true;
-                }
-                if (Model.HIPAACompliance != null)
-                {
-                    var filename = "HIPPA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.HIPAACompliance, filepath, filename);
-                    PhysicianDocuments.Istrainingdoc = true;
-                }
-                if (Model.NonDisclosureAgreement != null)
-                {
-                    var filename = "NDA";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.NonDisclosureAgreement, filepath, filename);
-                    PhysicianDocuments.Isnondisclosuredoc = true;
-                }
-                if (Model.LicenseDocument != null)
-                {
-                    var filename = "LD";
-                    var filepath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Content", "Providers", Model.PhysicianId.ToString());
-                    InsertFileAfterRename(Model.LicenseDocument, filepath, filename);
-                    PhysicianDocuments.Islicensedoc = true;
-                }
-                _context.Physicians.Update(PhysicianDocuments);
-                _context.SaveChanges();
+                return EditPhysicianProfile(PhysicianDocuments.Physicianid);
             }
-            return EditPhysicianProfile(PhysicianDocuments.Physicianid);
+            catch
+            {
+                _notyf.Error("Exception in Uploading Onboarding Documents in edit physician profile");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -1412,25 +1745,33 @@ namespace HalloDoc_Project.Controllers
         #region Insert file method for edit and create physician
         public void InsertFileAfterRename(IFormFile file, string path, string updateName)
         {
-            if (!Directory.Exists(path))
+            try
             {
-                Directory.CreateDirectory(path);
-            }
 
-            string[] oldfiles = Directory.GetFiles(path, updateName + ".*");
-            foreach (string f in oldfiles)
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                string[] oldfiles = Directory.GetFiles(path, updateName + ".*");
+                foreach (string f in oldfiles)
+                {
+                    System.IO.File.Delete(f);
+                }
+
+                string extension = Path.GetExtension(file.FileName);
+
+                string fileName = updateName + extension;
+
+                string fullPath = Path.Combine(path, fileName);
+
+                using FileStream stream = new(fullPath, FileMode.Create);
+                file.CopyTo(stream);
+            }
+            catch
             {
-                System.IO.File.Delete(f);
+                _notyf.Error("Exception in InsertFileAfterRename Method");
             }
-
-            string extension = Path.GetExtension(file.FileName);
-
-            string fileName = updateName + extension;
-
-            string fullPath = Path.Combine(path, fileName);
-
-            using FileStream stream = new(fullPath, FileMode.Create);
-            file.CopyTo(stream);
         }
 
         #endregion
@@ -1438,57 +1779,82 @@ namespace HalloDoc_Project.Controllers
         #region Provider Menu
         public IActionResult ProviderMenu()
         {
-            ProviderMenuViewModel ProviderMenuData = new ProviderMenuViewModel();
-            ProviderMenuData.Region = _context.Regions.ToList();
+            try
+            {
 
-            var DoctorDetails = (from p in _context.Physicians
-                                 join ph in _context.Physiciannotifications on p.Physicianid equals ph.Physicianid into notigroup
-                                 from notiitem in notigroup.DefaultIfEmpty()
-                                 select new Providers
-                                 {
-                                     PhysicianId = p.Physicianid,
-                                     Name = p.Firstname + " " + p.Lastname,
-                                     ProviderStatus = p.Status ?? 0,
-                                     Email = p.Email,
-                                     Notification = notiitem.Isnotificationstopped ? true : false,
-                                     Role = p.Roleid ?? 0
-                                 }).ToList();
-            ProviderMenuData.providers = DoctorDetails;
-            return View("ProviderViews/ProviderMenu", ProviderMenuData);
+                ProviderMenuViewModel ProviderMenuData = new ProviderMenuViewModel();
+                ProviderMenuData.Region = _context.Regions.ToList();
+
+                var DoctorDetails = (from p in _context.Physicians
+                                     join ph in _context.Physiciannotifications on p.Physicianid equals ph.Physicianid into notigroup
+                                     from notiitem in notigroup.DefaultIfEmpty()
+                                     select new Providers
+                                     {
+                                         PhysicianId = p.Physicianid,
+                                         Name = p.Firstname + " " + p.Lastname,
+                                         ProviderStatus = p.Status ?? 0,
+                                         Email = p.Email,
+                                         Notification = notiitem.Isnotificationstopped ? true : false,
+                                         Role = p.Roleid ?? 0
+                                     }).ToList();
+                ProviderMenuData.providers = DoctorDetails;
+                return View("ProviderViews/ProviderMenu", ProviderMenuData);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Provider Menu Get.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult ProviderMenuPartial(int regionid)
         {
-            ProviderMenuViewModel ProviderMenuData = new ProviderMenuViewModel();
-            var DoctorDetails = (from p in _context.Physicians
-                                 join ph in _context.Physiciannotifications on p.Physicianid equals ph.Physicianid into notigroup
-                                 from notiitem in notigroup.DefaultIfEmpty()
-                                 where (regionid == 0 || p.Regionid == regionid)
-                                 select new Providers
-                                 {
-                                     PhysicianId = p.Physicianid,
-                                     Name = p.Firstname + " " + p.Lastname,
-                                     ProviderStatus = p.Status ?? 0,
-                                     Email = p.Email,
-                                     Notification = notiitem.Isnotificationstopped ? true : false,
-                                     Role = p.Roleid ?? 0
-                                 }).ToList();
-            ProviderMenuData.providers = DoctorDetails;
-            return PartialView("ProviderViews/ProviderMenuPartial", ProviderMenuData);
+            try
+            {
+                ProviderMenuViewModel ProviderMenuData = new ProviderMenuViewModel();
+                var DoctorDetails = (from p in _context.Physicians
+                                     join ph in _context.Physiciannotifications on p.Physicianid equals ph.Physicianid into notigroup
+                                     from notiitem in notigroup.DefaultIfEmpty()
+                                     where (regionid == 0 || p.Regionid == regionid)
+                                     select new Providers
+                                     {
+                                         PhysicianId = p.Physicianid,
+                                         Name = p.Firstname + " " + p.Lastname,
+                                         ProviderStatus = p.Status ?? 0,
+                                         Email = p.Email,
+                                         Notification = notiitem.Isnotificationstopped ? true : false,
+                                         Role = p.Roleid ?? 0
+                                     }).ToList();
+                ProviderMenuData.providers = DoctorDetails;
+                return PartialView("ProviderViews/ProviderMenuPartial", ProviderMenuData);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Provider menu partial method.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public void UpdateNotifications(int PhysicianId)
         {
-            var PhysicianNotification = _context.Physiciannotifications.FirstOrDefault(x => x.Physicianid == PhysicianId);
-            if (PhysicianNotification.Isnotificationstopped)
+            try
             {
-                PhysicianNotification.Isnotificationstopped = false;
+                var PhysicianNotification = _context.Physiciannotifications.FirstOrDefault(x => x.Physicianid == PhysicianId);
+                if (PhysicianNotification.Isnotificationstopped)
+                {
+                    PhysicianNotification.Isnotificationstopped = false;
+                }
+                else if (!PhysicianNotification.Isnotificationstopped)
+                {
+                    PhysicianNotification.Isnotificationstopped = true;
+                }
+                _context.Physiciannotifications.Update(PhysicianNotification);
+                _context.SaveChanges();
+                _notyf.Information("Notifications Updated.");
             }
-            else if (!PhysicianNotification.Isnotificationstopped)
+            catch
             {
-                PhysicianNotification.Isnotificationstopped = true;
+                _notyf.Error("Exception in Updating Notifications");
             }
-            _context.Physiciannotifications.Update(PhysicianNotification);
-            _context.SaveChanges();
         }
         #endregion
 
@@ -1534,8 +1900,17 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public void SendLink(string FirstName, string LastName, string Email)
         {
-            var AgreementLink = Url.Action("patient_submit_request_screen", "Guest", new { }, Request.Scheme);
-            _emailService.SendEmailWithLink(FirstName, LastName, Email, AgreementLink);
+            try
+            {
+
+                var AgreementLink = Url.Action("patient_submit_request_screen", "Guest", new { }, Request.Scheme);
+                _emailService.SendEmailWithLink(FirstName, LastName, Email, AgreementLink);
+                _notyf.Success("Website link sent via email.");
+            }
+            catch
+            {
+                _notyf.Error("Exception in sending email link");
+            }
         }
         #endregion
 
@@ -1772,8 +2147,17 @@ namespace HalloDoc_Project.Controllers
         #region PatientHistory and PatientRecords
         public IActionResult PatientHistoryPartialTable(string FirstName, string LastName, string Email, string PhoneNo)
         {
-            List<PatientHistoryTableViewModel> PatientHistoryList = _patientHistoryPatientRecords.GetPatientHistoryData(FirstName, LastName, Email, PhoneNo);
-            return PartialView("Records/PatienthistoryPartialTable", PatientHistoryList);
+            try
+            {
+
+                List<PatientHistoryTableViewModel> PatientHistoryList = _patientHistoryPatientRecords.GetPatientHistoryData(FirstName, LastName, Email, PhoneNo);
+                return PartialView("Records/PatienthistoryPartialTable", PatientHistoryList);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Patient History.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult PatientHistory()
         {
@@ -1781,65 +2165,68 @@ namespace HalloDoc_Project.Controllers
         }
         public IActionResult PatientRecords(int Userid)
         {
+            try
+            {
 
-            List<PatientRecordsViewModel> PatientRecordsList = _patientHistoryPatientRecords.GetPatientRecordsData(Userid);
-            return View("Records/PatientRecords", PatientRecordsList);
+                List<PatientRecordsViewModel> PatientRecordsList = _patientHistoryPatientRecords.GetPatientRecordsData(Userid);
+                return View("Records/PatientRecords", PatientRecordsList);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Patient Records");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region Search Records
         public IActionResult SelectRecordsPartialTable(int requestStatus, string patientName, int requestType, string phoneNumber, DateTime? fromDateOfService, DateTime? toDateOfService, string providerName, string patientEmail)
         {
-            //var PatientRecords = (from r in _context.Requests
-            //                      join rc in _context.Requestclients on r.Requestid equals rc.Requestid
-            //                      join rs in _context.Requeststatuses on r.Status equals rs.Statusid
-            //                      //join rn in _context.Requestnotes on r.Requestid equals rn.Requestid
-            //                      join rt in _context.Requesttypes on r.Requesttypeid equals rt.Requesttypeid
-            //                      join phy in _context.Physicians on r.Physicianid equals phy.Physicianid into phyGroup
-            //                      from phyItem in phyGroup.DefaultIfEmpty()
-            //                      where (requestStatus == 0 || r.Status == requestStatus)
-            //                      && (string.IsNullOrEmpty(patientName) || (rc.Firstname + " " + rc.Lastname).ToLower().Contains(patientName.ToLower()))
-            //                      && (requestType == 0 || r.Requesttypeid == requestType)
-            //                      && (r.Accepteddate >= fromDateOfService || fromDateOfService == null)
-            //                      && (r.Accepteddate <= toDateOfService || toDateOfService == null)
-            //                      && (string.IsNullOrEmpty(providerName) || (r.Physician.Firstname + " " + r.Physician.Lastname).ToLower().Contains(providerName.ToLower()))
-            //                      && (string.IsNullOrEmpty(patientEmail) || (rc.Email).ToLower().Contains(patientEmail))
-            //                      && (string.IsNullOrEmpty(phoneNumber) || (rc.Phonenumber).ToLower().Contains(phoneNumber))
-            //                      select new SearchRecordsTableViewModel
-            //                      {
-            //                          PatientName = rc.Firstname + " " + rc.Lastname,
-            //                          Requestor = r.Firstname + " " + r.Lastname,
-            //                          DateOfService = DateOnly.FromDateTime(DateTime.Now),
-            //                          CloseCaseDate = DateOnly.FromDateTime(DateTime.Now),
-            //                          Email = rc.Email,
-            //                          PhoneNumber = rc.Phonenumber,
-            //                          Address = rc.Address,
-            //                          Zip = rc.Zipcode,
-            //                          RequestStatus = rs.Name,
-            //                          //PhysicianNotes = rn.Physiciannotes,
-            //                          //AdminNotes = rn.Adminnotes,
-            //                          PatientNotes = "PatientNotes",
-            //                          PhysicianName = phyItem.Firstname + " " + phyItem.Lastname,
-            //                          CancelledByPhysicianNotes = "N/A"
-            //                      }).ToList();
-            List<SearchRecordsTableViewModel> PatientRecords = _searchRecords.GetPatientDataForSearchRecords(requestStatus, patientName, requestType, phoneNumber, fromDateOfService, toDateOfService, providerName, patientEmail);
-            return PartialView("Records/SearchRecordsPartialTable", PatientRecords);
+            try
+            {
+
+                List<SearchRecordsTableViewModel> PatientRecords = _searchRecords.GetPatientDataForSearchRecords(requestStatus, patientName, requestType, phoneNumber, fromDateOfService, toDateOfService, providerName, patientEmail);
+                return PartialView("Records/SearchRecordsPartialTable", PatientRecords);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Select Records Partial Table");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult DeleteRequest(int requestid)
         {
-            Request UserRequest = _context.Requests.FirstOrDefault(request => request.Requestid == requestid);
-            if (UserRequest != null)
+            try
             {
-                UserRequest.Isdeleted = true;
+
+                Request UserRequest = _context.Requests.FirstOrDefault(request => request.Requestid == requestid);
+                if (UserRequest != null)
+                {
+                    UserRequest.Isdeleted = true;
+                }
+                _context.Requests.Update(UserRequest);
+                _context.SaveChanges();
+                return RedirectToAction("SearchRecords");
             }
-            _context.Requests.Update(UserRequest);
-            _context.SaveChanges();
-            return RedirectToAction("SearchRecords");
+            catch
+            {
+                _notyf.Error("Exception in Delete Requests");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult SearchRecords()
         {
-            SearchRecordViewModel model = _searchRecords.GetSearchRecordsData();
-            return View("Records/SearchRecords", model);
+            try
+            {
+
+                SearchRecordViewModel model = _searchRecords.GetSearchRecordsData();
+                return View("Records/SearchRecords", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Search Records");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion 
 
@@ -1850,14 +2237,30 @@ namespace HalloDoc_Project.Controllers
         }
         public IActionResult BlockHistoryPartialTable(string FirstName, string LastName, string Email, string PhoneNo)
         {
+            try
+            {
 
-            List<BlockHistoryViewModel> BlockHistoryRecords = _blockHistory.GetBlockHistoryData(FirstName, LastName, Email, PhoneNo);
-            return PartialView("Records/BlockHistoryPartialTable", BlockHistoryRecords);
+                List<BlockHistoryViewModel> BlockHistoryRecords = _blockHistory.GetBlockHistoryData(FirstName, LastName, Email, PhoneNo);
+                return PartialView("Records/BlockHistoryPartialTable", BlockHistoryRecords);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Block History Partial Table");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult UnblockRequest(int requestid)
         {
-            _blockHistory.UnblockBlockedRequest(requestid);
-            return RedirectToAction("BlockHistory");
+            try
+            {
+                _blockHistory.UnblockBlockedRequest(requestid);
+                return RedirectToAction("BlockHistory");
+            }
+            catch
+            {
+                _notyf.Error("Exception in Unbloack Requests");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
@@ -1865,86 +2268,183 @@ namespace HalloDoc_Project.Controllers
 
         public IActionResult EmailLogs()
         {
-            EmailLogViewModel emaildata = _emailSMSLogs.GetRolesEmailLogTable();
-            return View("Records/EmailLog", emaildata);
+            try
+            {
+
+                EmailLogViewModel emaildata = _emailSMSLogs.GetRolesEmailLogTable();
+                return View("Records/EmailLog", emaildata);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Email Logs");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult EmailLogPartialTable(string ReceiverName, string Email, DateTime? CreatedDate, DateTime? SentDate, int RoleId)
         {
-            List<EmailLogViewModel> EmailList = _emailSMSLogs.GetEmailLogsData(ReceiverName, Email, CreatedDate, SentDate, RoleId);
-            return PartialView("Records/EmailLogPartialTable", EmailList);
+            try
+            {
+
+                List<EmailLogViewModel> EmailList = _emailSMSLogs.GetEmailLogsData(ReceiverName, Email, CreatedDate, SentDate, RoleId);
+                return PartialView("Records/EmailLogPartialTable", EmailList);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Email Log Partial Table.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region SMS LOG RECORDS
         public IActionResult SMSLogs()
         {
-            SMSLogViewModel SMSdata = _emailSMSLogs.GetRolesSMSLogTable();
-            return View("Records/SMSLog", SMSdata);
+            try
+            {
+
+                SMSLogViewModel SMSdata = _emailSMSLogs.GetRolesSMSLogTable();
+                return View("Records/SMSLog", SMSdata);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Sms Logs Table");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult SMSLogPartialTable(string ReceiverName, string PhoneNo, DateTime? CreatedDate, DateTime? SentDate, int RoleId)
         {
-            List<SMSLogViewModel> SMSList = _emailSMSLogs.GetSMSLogsData(ReceiverName, PhoneNo, CreatedDate, SentDate, RoleId);
-            return PartialView("Records/SMSLogPartialTable", SMSList);
+            try
+            {
+
+                List<SMSLogViewModel> SMSList = _emailSMSLogs.GetSMSLogsData(ReceiverName, PhoneNo, CreatedDate, SentDate, RoleId);
+                return PartialView("Records/SMSLogPartialTable", SMSList);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Sms log Partial Table");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         #endregion
 
         #region VENDOR DETAILS / CREATE VENDORS / EDIT VENDORS
         public IActionResult VendorDetails()
         {
-            VendorDetailsViewModel model = _vendorDetails.GetVendorDetails();
-            return View("Partners/VendorDetails", model);
+            try
+            {
+
+                VendorDetailsViewModel model = _vendorDetails.GetVendorDetails();
+                return View("Partners/VendorDetails", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Vendor Details");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult VendorsFilter(string filterSearch, int filterProfession)
         {
-            VendorDetailsViewModel model = _vendorDetails.GetFilteredDataForVendors(filterSearch, filterProfession);
-            return PartialView("Partners/VendorDetailsPartialTable", model);
+            try
+            {
+
+                VendorDetailsViewModel model = _vendorDetails.GetFilteredDataForVendors(filterSearch, filterProfession);
+                return PartialView("Partners/VendorDetailsPartialTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Vendors Filter");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult DeleteVendor(int id)
         {
-            _vendorDetails.ChangeVendorStatusToDeleted(id);
-            return RedirectToAction("VendorDetails");
+            try
+            {
+
+                _vendorDetails.ChangeVendorStatusToDeleted(id);
+                return RedirectToAction("VendorDetails");
+            }
+            catch
+            {
+                _notyf.Error("Exception in Delete Vendors");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         public IActionResult AddBusiness()
         {
-            CreateUpdateVendorViewModel model = new()
+            try
             {
-                types = _context.Healthprofessionaltypes.ToList(),
-                regions = _context.Regions.ToList()
-            };
+                CreateUpdateVendorViewModel model = new()
+                {
+                    types = _context.Healthprofessionaltypes.ToList(),
+                    regions = _context.Regions.ToList()
+                };
 
-            return View("Partners/AddBusiness", model);
+                return View("Partners/AddBusiness", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Adding business");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         [HttpPost]
+
         public IActionResult AddBusiness(CreateUpdateVendorViewModel model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _vendorDetails.AddNewBusiness(model);
-                _notyf.Success("New vendor added successfully");
+                if (ModelState.IsValid)
+                {
+                    _vendorDetails.AddNewBusiness(model);
+                    _notyf.Success("New vendor added successfully");
 
+                }
+                return RedirectToAction("VendorDetails");
             }
-            return RedirectToAction("VendorDetails");
+            catch
+            {
+                _notyf.Error("Exception in Adding business.");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         public IActionResult EditBusiness(int id)
         {
-            Console.WriteLine(HttpContext);
-            CreateUpdateVendorViewModel model = _vendorDetails.GetBusinessDetailsForEdit(id);
-            return View("Partners/EditBusiness", model);
+            try
+            {
+                Console.WriteLine(HttpContext);
+                CreateUpdateVendorViewModel model = _vendorDetails.GetBusinessDetailsForEdit(id);
+                return View("Partners/EditBusiness", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Edit Business");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         [HttpPost]
         public IActionResult EditBusiness(CreateUpdateVendorViewModel model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                model = _vendorDetails.UpdateBusinessDetails(model);
-                _notyf.Success("Vendor Details saved successfully");
+
+                if (ModelState.IsValid)
+                {
+                    model = _vendorDetails.UpdateBusinessDetails(model);
+                    _notyf.Success("Vendor Details saved successfully");
+                }
+                return RedirectToAction("EditBusiness", model.Id);
             }
-            return RedirectToAction("EditBusiness", model.Id);
+            catch
+            {
+                _notyf.Error("Exception in Editing Business");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -1952,6 +2452,8 @@ namespace HalloDoc_Project.Controllers
         #endregion
 
         #region ADMIN DASHBOARD TABLES
+
+        //common method that is always called to setup the dashboard filters for the table of admin dashboard
         public DashboardFilter SetDashboardFilterValues(int page, int region, int type, string search)
         {
             int pagesize = 5;
@@ -1975,58 +2477,110 @@ namespace HalloDoc_Project.Controllers
         [HttpPost]
         public IActionResult NewTable(int page, int region, int type, string search)
         {
+            try
+            {
 
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetNewTable(filter);
-            model.currentPage = filter.pageNumber;
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetNewTable(filter);
+                model.currentPage = filter.pageNumber;
 
-            return PartialView("NewTable", model);
+                return PartialView("NewTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in New Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult ActiveTable(int page, int region, int type, string search)
         {
+            try
+            {
 
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetActiveTable(filter);
-            model.currentPage = filter.pageNumber;
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetActiveTable(filter);
+                model.currentPage = filter.pageNumber;
 
-            return PartialView("ActiveTable", model);
+                return PartialView("ActiveTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Active Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult PendingTable(int page, int region, int type, string search)
         {
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetPendingTable(filter);
-            model.currentPage = filter.pageNumber;
+            try
+            {
 
-            return PartialView("PendingTable", model);
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetPendingTable(filter);
+                model.currentPage = filter.pageNumber;
+
+                return PartialView("PendingTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Pending Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult ConcludeTable(int page, int region, int type, string search)
         {
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetConcludeTable(filter);
-            model.currentPage = filter.pageNumber;
+            try
+            {
 
-            return PartialView("ConcludeTable", model);
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetConcludeTable(filter);
+                model.currentPage = filter.pageNumber;
+
+                return PartialView("ConcludeTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Conclude Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult ToCloseTable(int page, int region, int type, string search)
         {
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetToCloseTable(filter);
-            model.currentPage = filter.pageNumber;
+            try
+            {
 
-            return PartialView("ToCloseTable", model);
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetToCloseTable(filter);
+                model.currentPage = filter.pageNumber;
+
+                return PartialView("ToCloseTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in To-CLose Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult UnpaidTable(int page, int region, int type, string search)
         {
-            var filter = SetDashboardFilterValues(page, region, type, search);
-            AdminDashboardViewModel model = _adminTables.GetUnpaidTable(filter);
-            model.currentPage = filter.pageNumber;
+            try
+            {
 
-            return PartialView("UnpaidTable", model);
+                var filter = SetDashboardFilterValues(page, region, type, search);
+                AdminDashboardViewModel model = _adminTables.GetUnpaidTable(filter);
+                model.currentPage = filter.pageNumber;
+
+                return PartialView("UnpaidTable", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Unpaid Table Admin Dashboard");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion
@@ -2035,26 +2589,52 @@ namespace HalloDoc_Project.Controllers
 
         public IActionResult AdminProfile()
         {
-            var email = HttpContext.Session.GetString("Email");
-
-            AdminProfileViewModel model = new();
-            if (email != null)
+            try
             {
-                model = _admin.AdminProfileGet(email);
+                var email = HttpContext.Session.GetString("Email");
+                AdminProfileViewModel model = new();
+                if (email != null)
+                {
+                    model = _admin.AdminProfileGet(email);
+                }
+                return View("AdminProfile", model);
             }
-            return View("AdminProfile", model);
+            catch
+            {
+                _notyf.Error("Exception in Admin Profile");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult AdminInfoPost(AdminProfileViewModel apvm, string[] AdminLocations)
         {
-            _admin.AdminInfoPost(apvm, AdminLocations);
-            return AdminProfile();
+            try
+            {
+                _admin.AdminInfoPost(apvm, AdminLocations);
+                _notyf.Success("Details Updated Successfully");
+
+                return AdminProfile();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Admin Information Post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult BillingInfoPost(AdminProfileViewModel apvm)
         {
-            _admin.BillingInfoPost(apvm);
-            return AdminProfile();
+            try
+            {
+                _admin.BillingInfoPost(apvm);
+                _notyf.Success("Details Updated Successfully");
+                return AdminProfile();
+            }
+            catch
+            {
+                _notyf.Error("Exception in Billing Information Post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult PasswordPost(AdminProfileViewModel apvm)
@@ -2071,42 +2651,79 @@ namespace HalloDoc_Project.Controllers
 
         public IActionResult EditAdminAccount(int id)
         {
-            Admin? GetAdmin = _context.Admins.FirstOrDefault(admin => admin.Adminid == id);
-            AdminProfileViewModel model = _admin.AdminProfileGet(GetAdmin.Email);
-            return View("AccessViews/EditAdminAccount", model);
+            try
+            {
+
+                Admin? GetAdmin = _context.Admins.FirstOrDefault(admin => admin.Adminid == id);
+                AdminProfileViewModel model = _admin.AdminProfileGet(GetAdmin.Email);
+                return View("AccessViews/EditAdminAccount", model);
+            }
+            catch
+            {
+                _notyf.Error("Exception in Edit Admin Account.");
+                return RedirectToAction("AdminDashboard");
+            }
+
         }
         [HttpPost]
         public IActionResult EditAdminInfoPost(AdminProfileViewModel apvm, string[] AdminLocations)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _admin.AdminInfoPost(apvm, AdminLocations);
-                _notyf.Success("Admin details updated");
+
+                if (ModelState.IsValid)
+                {
+                    _admin.AdminInfoPost(apvm, AdminLocations);
+                    _notyf.Success("Admin details updated");
+                }
+                return EditAdminAccount(apvm.adminId);
             }
-            return EditAdminAccount(apvm.adminId);
+            catch
+            {
+                _notyf.Error("Exception in Edit Admin Info Post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult EditBillingInfoPost(AdminProfileViewModel apvm)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _admin.BillingInfoPost(apvm);
-                _notyf.Success("Billing details updated");
+
+                if (ModelState.IsValid)
+                {
+                    _admin.BillingInfoPost(apvm);
+                    _notyf.Success("Billing details updated");
+                }
+                return EditAdminAccount(apvm.adminId);
             }
-            return EditAdminAccount(apvm.adminId);
+            catch
+            {
+                _notyf.Error("Exception in Billing Info Post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
         [HttpPost]
         public IActionResult EditPasswordPost(AdminProfileViewModel apvm)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var email = HttpContext.Session.GetString("Email");
-                if (email != null)
+
+                if (ModelState.IsValid)
                 {
-                    _admin.PasswordPost(apvm, email);
+                    var email = HttpContext.Session.GetString("Email");
+                    if (email != null)
+                    {
+                        _admin.PasswordPost(apvm, email);
+                    }
                 }
+                return EditAdminAccount(apvm.adminId);
             }
-            return EditAdminAccount(apvm.adminId);
+            catch
+            {
+                _notyf.Error("Exception in Password Post");
+                return RedirectToAction("AdminDashboard");
+            }
         }
 
         #endregion

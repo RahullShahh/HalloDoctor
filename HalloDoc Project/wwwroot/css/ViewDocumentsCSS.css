@@ -64,3 +64,6 @@ tr {
     margin-left: 15vw;
     margin-right: 15vw;
 }
+* {
+    font-family: "Inter" !important;
+}

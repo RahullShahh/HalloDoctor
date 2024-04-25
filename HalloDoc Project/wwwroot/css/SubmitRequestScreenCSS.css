@@ -17,6 +17,9 @@
 [data-bs-theme="dark"] .darkModeShadow {
     box-shadow: 0px 3px 10px #000000 !important;
 }
+* {
+    font-family: "Inter" !important;
+}
 
 #opt1 {
     font-weight: bold;

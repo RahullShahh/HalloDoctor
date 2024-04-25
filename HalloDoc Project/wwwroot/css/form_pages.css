@@ -10,7 +10,7 @@
     /* / color: #fff; / */
 }
 * {
-    font-family: "Inter";
+    font-family: "Inter"!important;
 }
 #fileLoader {
     position: absolute;
